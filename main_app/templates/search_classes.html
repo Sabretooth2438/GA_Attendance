@@ -3,3 +3,9 @@
 {% block title %}Search Classes | GA Attendance{% endblock %}
 
 {% block content %}
+<h2>Search Classes</h2>
+<form method="post">
+    {% csrf_token %}
+    <input type="text" name="query" placeholder="Search classes" value="{{ query }}">
+    <button type="submit">Search</button>
+</form>
