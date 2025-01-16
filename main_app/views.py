@@ -70,3 +70,8 @@ def create_class(request):
     else:
         form = ClassForm()
     return render(request, 'create_class.html', {'form': form})
+
+@login_required
+def class_detail(request, pk):
+    class_ = get_object_or_404(Class, pk=pk)
+    return render(request, 'class_detail.html', {'class': class_})
