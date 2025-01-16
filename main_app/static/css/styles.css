@@ -23,4 +23,10 @@
   .burger-menu {
     display: block;
   }
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+  }
   
+}
