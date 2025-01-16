@@ -179,3 +179,15 @@ def profile_detail(request, pk):
         percentage = (present / total) * 100 if total > 0 else 0
         attendance_summary[class_] = percentage
     return render(request, 'profile_detail.html', {'profile': profile, 'attendance_summary': attendance_summary})
+
+
+@login_required
+def delete_class(request, class_id):
+    class_instance = get_object_or_404(Class, pk=class_id)
+    if request.user.profile == class_instance.teacher:
+        if request.method == 'POST':
+            class_instance.delete()
+            return redirect('manage_classes')
+    else:
+        return redirect('home')
+    return render(request, 'delete_class.html', {'class': class_instance})
