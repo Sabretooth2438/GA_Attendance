@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from .forms import UserRegistrationForm, ProfileForm, ClassForm, StudentSearchForm, AttendanceForm
@@ -50,3 +52,21 @@ def edit_profile(request):
     else: 
         form = ProfileForm(instance=profile) 
     return render(request, 'edit_profile.html', {'form': form})
+
+def home(request):
+    return render(request, 'home.html')
+
+@login_required
+def create_class(request):
+    if request.user.profile.role != 'Teacher':
+        return redirect('home')  # Only teachers can create classes
+    if request.method == 'POST':
+        form = ClassForm(request.POST)
+        if form.is_valid():
+            class_ = form.save(commit=False)
+            class_.teacher = request.user.profile
+            class_.save()
+            return redirect('class_detail', pk=class_.pk)
+    else:
+        form = ClassForm()
+    return render(request, 'create_class.html', {'form': form})
