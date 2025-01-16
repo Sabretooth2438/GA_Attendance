@@ -148,3 +148,16 @@ def mark_attendance_inline(request, class_pk, student_pk):
     student_profile = get_object_or_404(Profile, pk=student_pk)
     if request.user.profile.role != 'Teacher' or request.user.profile != class_instance.teacher:
         return redirect('home')
+
+    if request.method == 'POST':
+        form = AttendanceForm(request.POST)
+        if form.is_valid():
+            attendance = form.save(commit=False)
+            attendance.classid = class_instance
+            attendance.student = student_profile
+            attendance.save()
+            return redirect('class_detail', pk=class_pk)
+    else:
+        form = AttendanceForm()
+
+    return render(request, 'class_detail.html', {'class': class_instance, 'form': form, 'student_profile': student_profile})
