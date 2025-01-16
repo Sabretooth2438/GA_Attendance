@@ -29,3 +29,12 @@ class Class(models.Model):
 
     def __str__(self):
         return self.name
+    
+class Attendance(models.Model):
+    student = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    classid = models.ForeignKey(Class, on_delete=models.CASCADE)
+    date = models.DateField()
+    status = models.CharField(max_length=1, choices=STATUS_CHOICES)
+
+    def __str__(self):
+        return f"{self.student.user.username} - {self.classid.name} on {self.date} - {self.get_status_display()}"
