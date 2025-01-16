@@ -1,0 +1,16 @@
+<!-- main_app/templates/profile.html -->
+{% extends "base.html" %}
+
+{% block title %}Profile | GA Attendance{% endblock %}
+
+{% block content %}
+<h2>Profile</h2>
+<p>Welcome, {{ user.username }}!</p>
+<p>Email: {{ user.profile.email }}</p>
+<p>Bio: {{ user.profile.bio }}</p>
+{% if user.profile.image %}
+<img src="{{ user.profile.profile_img.url }}" alt="Profile Image">
+{% else %}
+<p>No Profile Image </p>
+{% endif %}
+{% endblock %}
