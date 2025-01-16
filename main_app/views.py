@@ -161,3 +161,8 @@ def mark_attendance_inline(request, class_pk, student_pk):
         form = AttendanceForm()
 
     return render(request, 'class_detail.html', {'class': class_instance, 'form': form, 'student_profile': student_profile})
+
+@login_required
+def attendance_records(request):
+    records = Attendance.objects.all()
+    return render(request, 'attendance_records.html', {'records': records})
