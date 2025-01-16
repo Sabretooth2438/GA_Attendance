@@ -10,23 +10,18 @@ from django.urls import reverse_lazy
 def signup(request):
     if request.method == 'POST':
         user_form = UserRegistrationForm(request.POST)
-        profile_form = ProfileForm(request.POST, request.FILES)
-        if user_form.is_valid() and profile_form.is_valid():
+        if user_form.is_valid():
             user = user_form.save(commit=False)
+            user.email = user_form.cleaned_data['email']  # Set the email
             user.set_password(user_form.cleaned_data['password'])
             user.save()
-            profile = profile_form.save(commit=False)
-            profile.user = user
-            profile.email = user.email
-            profile.save()
+            # Profile is automatically created via the signal
             login(request, user)
             return redirect('profile') 
     else:
         user_form = UserRegistrationForm()
-        profile_form = ProfileForm()
     return render(request, 'registration/signup.html', {
         'user_form': user_form,
-        'profile_form': profile_form
     })
 
 class CustomLoginView(LoginView):

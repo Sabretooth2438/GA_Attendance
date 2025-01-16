@@ -10,6 +10,12 @@ class UserRegistrationForm(forms.ModelForm):
         model = User
         fields = ['username', 'email']
 
+    def clean_email(self):
+        email = self.cleaned_data['email'].lower()
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("Email is already in use.")
+        return email
+
     def clean_password2(self):
         cd = self.cleaned_data
         if cd['password'] != cd['password2']:

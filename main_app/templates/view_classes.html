@@ -1,12 +1,20 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}My Classes | GA Attendance{% endblock %}
+{% block title %}
+    My Classes | GA Attendance
+{% endblock %}
 
 {% block content %}
-<h2>My Classes</h2>
-<ul>
-    {% for class in classes %}
-          <li><a href="{% url'class_detail' pk=class.pk %}">{{ class.name }}</a></li>
-    {% endfor %}
-</ul>
+    <h2>My Classes</h2>
+    {% if classes %}
+        <ul>
+        {% for class in classes %}
+            <li>
+            <a href="{% url 'class_detail' pk=class.pk %}">{{ class.name }}</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>You are not assigned to any class.</p>
+    {% endif %}
 {% endblock %}
