@@ -17,7 +17,15 @@ class UserRegistrationForm(forms.ModelForm):
             raise forms.ValidationError('Password don\'t match.')
         return cd ['password2']
 
-class ProfileForm( forms.ModelForm):
+class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
+        fields = ['bio', 'Profile_img']
+
+class ClassForm(forms.ModelForm):
+    class Meta:
+        model = Class
         fields = ['name', 'description']
+
+class StudentSearchForm(forms.Form):
+    username = forms.CharField(label='Student Username', max_length=150)
