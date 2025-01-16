@@ -17,6 +17,10 @@
                   <a href="{% url 'class_detail' pk=class.pk %}">{{ class.name }}</a>
                   <form method="post" action="{% url 'send_join_request' pk=class.pk %}">
                     {% csrf_token %}
+                    <button type="submit">Join</button>
                   </form>
               </li>
+        {% endfor %}
     </ul>
+{% endif %}
+{% endblock %}
