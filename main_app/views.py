@@ -18,7 +18,7 @@ def signup(request):
             profile.email = user.email
             profile.save()
             login(request, user)
-            return redirect('profile')  # Redirect to profile page after signup
+            return redirect('profile') 
     else:
         user_form = UserRegistrationForm()
         profile_form = ProfileForm()
@@ -26,3 +26,8 @@ def signup(request):
         'user_form': user_form,
         'profile_form': profile_form
     })
+
+class CustomLoginView(LoginView):
+    template_name = 'registration/login.html'
+    def get_success_url(self): 
+        return reverse_lazy('home')
