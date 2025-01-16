@@ -132,3 +132,12 @@ def leave_class(request, pk):
         return redirect('home')
     class_.students.remove(request.user.profile)
     return redirect('view_classes')
+
+@login_required
+def remove_student(request, class_pk, student_pk):
+    class_ = get_object_or_404(Class, pk=class_pk)
+    student_profile = get_object_or_404(Profile, pk=student_pk)
+    if request.user.profile.role != 'Teacher' or request.user.profile != class_.teacher:
+        return redirect('home')
+    class_.students.remove(student_profile)
+    return redirect('class_detail', pk=class_pk)
