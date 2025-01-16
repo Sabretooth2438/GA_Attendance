@@ -59,7 +59,7 @@ def home(request):
 @login_required
 def create_class(request):
     if request.user.profile.role != 'Teacher':
-        return redirect('home')  # Only teachers can create classes
+        return redirect('home')
     if request.method == 'POST':
         form = ClassForm(request.POST)
         if form.is_valid():
@@ -141,3 +141,10 @@ def remove_student(request, class_pk, student_pk):
         return redirect('home')
     class_.students.remove(student_profile)
     return redirect('class_detail', pk=class_pk)
+
+@login_required
+def mark_attendance_inline(request, class_pk, student_pk):
+    class_instance = get_object_or_404(Class, pk=class_pk)
+    student_profile = get_object_or_404(Profile, pk=student_pk)
+    if request.user.profile.role != 'Teacher' or request.user.profile != class_instance.teacher:
+        return redirect('home')
