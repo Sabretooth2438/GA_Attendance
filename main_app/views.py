@@ -111,3 +111,11 @@ def search_classes(request):
         classes = Class.objects.filter(name__icontains=query)
         return render(request, 'search_classes.html', {'classes': classes, 'query': query})
     return render(request, 'search_classes.html')
+
+@login_required
+def send_join_request(request, pk):
+    class_ = get_object_or_404(Class, pk=pk)
+    if request.user.profile.role != 'Student':
+        return redirect('home')
+    class_.students.add(request.user.profile)
+    return redirect('class_detail', pk=pk)
