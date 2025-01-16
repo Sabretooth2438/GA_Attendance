@@ -103,3 +103,11 @@ def add_student(request, pk):
         search_form = StudentSearchForm()
     
     return render(request, 'add_student.html', {'class': class_, 'search_form': search_form})
+
+@login_required
+def search_classes(request):
+    if request.method == 'POST':
+        query = request.POST.get('query')
+        classes = Class.objects.filter(name__icontains=query)
+        return render(request, 'search_classes.html', {'classes': classes, 'query': query})
+    return render(request, 'search_classes.html')
