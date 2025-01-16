@@ -34,3 +34,7 @@ class CustomLoginView(LoginView):
     
 class CustomLogoutView(LogoutView):
     next_page = reverse_lazy('home')
+
+@login_required
+def profile(request):
+    return render(request, 'profile.html', {'user': request.user})
