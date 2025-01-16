@@ -119,3 +119,8 @@ def send_join_request(request, pk):
         return redirect('home')
     class_.students.add(request.user.profile)
     return redirect('class_detail', pk=pk)
+
+@login_required
+def view_classes(request):
+    classes = request.user.profile.classes.all()
+    return render(request, 'view_classes.html', {'classes': classes})
