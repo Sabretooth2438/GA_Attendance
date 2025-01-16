@@ -124,3 +124,11 @@ def send_join_request(request, pk):
 def view_classes(request):
     classes = request.user.profile.classes.all()
     return render(request, 'view_classes.html', {'classes': classes})
+
+@login_required
+def leave_class(request, pk):
+    class_ = get_object_or_404(Class, pk=pk)
+    if request.user.profile.role != 'Student':
+        return redirect('home')
+    class_.students.remove(request.user.profile)
+    return redirect('view_classes')
