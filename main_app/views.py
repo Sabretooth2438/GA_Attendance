@@ -166,3 +166,16 @@ def mark_attendance_inline(request, class_pk, student_pk):
 def attendance_records(request):
     records = Attendance.objects.all()
     return render(request, 'attendance_records.html', {'records': records})
+
+@login_required
+def profile_detail(request, pk):
+    profile = Profile.objects.get(pk=pk)
+    classes = profile.classes.all()
+    attendance_summary = {}
+    for class_ in classes:
+        records = Attendance.objects.filter(student=profile, classid=class_)
+        total = records.count()
+        present = records.filter(status='P').count()
+        percentage = (present / total) * 100 if total > 0 else 0
+        attendance_summary[class_] = percentage
+    return render(request, 'profile_detail.html', {'profile': profile, 'attendance_summary': attendance_summary})
