@@ -31,3 +31,6 @@ class CustomLoginView(LoginView):
     template_name = 'registration/login.html'
     def get_success_url(self): 
         return reverse_lazy('home')
+    
+class CustomLogoutView(LogoutView):
+    next_page = reverse_lazy('home')
