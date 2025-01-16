@@ -12,3 +12,6 @@
   display: flex;
   list-style: none;
 }
+.nav-links li {
+  margin: 0 15px;
+}
