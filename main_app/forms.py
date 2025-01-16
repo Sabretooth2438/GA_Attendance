@@ -29,3 +29,8 @@ class ClassForm(forms.ModelForm):
 
 class StudentSearchForm(forms.Form):
     username = forms.CharField(label='Student Username', max_length=150)
+
+class AttendanceForm(forms.ModelForm):
+    class Meta:
+        model = Attendance
+        fields = ['date', 'status']
