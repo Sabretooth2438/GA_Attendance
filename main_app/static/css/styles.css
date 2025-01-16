@@ -31,4 +31,7 @@
   .nav-links.active {
     display: flex;
   }
+  .nav-links li {
+    margin: 10px 0;
+  }
 }
