@@ -20,3 +20,12 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+class Class(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    students = models.ManyToManyField(Profile, related_name='classes')
+    teacher = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='taught_classes')
+
+    def __str__(self):
+        return self.name
