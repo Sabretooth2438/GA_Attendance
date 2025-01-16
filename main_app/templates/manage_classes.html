@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Classes | GA Attendance{% endblock %}
+
+{% block content %}
+<h2>Manage Classes</h2>
+<ul>
+    {% for class in classes %}
+        <li><a href="{% url 'class_detail' pk=class.pk %}">{{ class.name }}</a></li>
+    {% endfor %}
+</ul>
+<a href="{% url 'create_class' %}">Create New Class</a>
+{% endblock %}
