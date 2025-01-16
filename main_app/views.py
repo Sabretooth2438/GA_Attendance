@@ -82,3 +82,24 @@ def manage_classes(request):
         return redirect('home')
     classes = Class.objects.filter(teacher=request.user.profile)
     return render(request, 'manage_classes.html', {'classes': classes})
+
+@login_required
+def add_student(request, pk):
+    class_ = get_object_or_404(Class, pk=pk)
+    if request.user.profile.role != 'Teacher' or request.user.profile != class_.teacher:
+        return redirect('home')  
+        
+    if request.method == 'POST':
+        search_form = StudentSearchForm(request.POST)
+        if search_form.is_valid():
+            username = search_form.cleaned_data['username']
+            try:
+                student_profile = Profile.objects.get(user__username=username, role='Student')
+                class_.students.add(student_profile)
+                return redirect('class_detail', pk=pk)
+            except Profile.DoesNotExist:
+                search_form.add_error('username', 'Student not found.')
+    else:
+        search_form = StudentSearchForm()
+    
+    return render(request, 'add_student.html', {'class': class_, 'search_form': search_form})
