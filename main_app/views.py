@@ -75,3 +75,10 @@ def create_class(request):
 def class_detail(request, pk):
     class_ = get_object_or_404(Class, pk=pk)
     return render(request, 'class_detail.html', {'class': class_})
+
+@login_required
+def manage_classes(request):
+    if request.user.profile.role != 'Teacher':
+        return redirect('home')
+    classes = Class.objects.filter(teacher=request.user.profile)
+    return render(request, 'manage_classes.html', {'classes': classes})
