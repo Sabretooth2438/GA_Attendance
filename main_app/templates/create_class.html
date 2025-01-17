@@ -1,12 +1,14 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Create Class | GA Attendance{% endblock %}
+{% block title %}
+    Create Class | GA Attendance
+{% endblock %}
 
 {% block content %}
-<h2>Create Class</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Create Class</button>
-</form>
+    <h2>Create Class</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Create Class</button>
+    </form>
 {% endblock %}

@@ -1,26 +1,28 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Profile Detail | GA Attendance{% endblock %}
+{% block title %}
+    Profile Detail | GA Attendance
+{% endblock %}
 
 {% block content %}
-<h2>{{ profile.user.username }}'s Profile</h2>
-<p>Email: {{ profile.email }}</p>
-<p>Bio: {{ profile.bio }}</p>
-<h3>Attendance Summary</h3>
-<table>
-    <thead>
+    <h2>{{ profile.user.username }}'s Profile</h2>
+    <p>Email: {{ profile.email }}</p>
+    <p>Bio: {{ profile.bio }}</p>
+    <h3>Attendance Summary</h3>
+    <table>
+        <thead>
         <tr>
             <th>Class</th>
             <th>Attendance Percentage</th>
         </tr>
-    </thead>
-    <tbody>
+        </thead>
+        <tbody>
         {% for class, percentage in attendance_summary.items %}
             <tr>
-                <td>{{ class.name }}</td>
-                <td>{{ percentage }}%</td>
+            <td>{{ class.name }}</td>
+            <td>{{ percentage }}%</td>
             </tr>
         {% endfor %}
-    </tbody>
-</table>
+        </tbody>
+    </table>
 {% endblock %}

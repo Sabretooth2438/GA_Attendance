@@ -1,26 +1,30 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Search Classes | GA Attendance{% endblock %}
+{% block title %}
+    Search Classes | GA Attendance
+{% endblock %}
 
 {% block content %}
-<h2>Search Classes</h2>
-<form method="post">
-    {% csrf_token %}
-    <input type="text" name="query" placeholder="Search classes" value="{{ query }}">
-    <button type="submit">Search</button>
-</form>
+    <h2>Search Classes</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="query" placeholder="Search classes" value="{{ query }}" />
+        <button type="submit">Search</button>
+    </form>
 
-{% if classes %}
-    <ul>
-        {% for class on classes %}
-              <li>
-                  <a href="{% url 'class_detail' pk=class.pk %}">{{ class.name }}</a>
-                  <form method="post" action="{% url 'send_join_request' pk=class.pk %}">
-                    {% csrf_token %}
-                    <button type="submit">Join</button>
-                  </form>
-              </li>
+    {% if classes %}
+        <ul>
+        {% for class in classes %}
+            <li>
+            <a href="{% url 'class_detail' pk=class.pk %}">{{ class.name }}</a>
+            <form method="post" action="{% url 'send_join_request' pk=class.pk %}">
+                {% csrf_token %}
+                <button type="submit">Join</button>
+            </form>
+            </li>
         {% endfor %}
-    </ul>
-{% endif %}
+        </ul>
+    {% else %}
+        <p>No classes available.</p>
+    {% endif %}
 {% endblock %}

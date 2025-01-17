@@ -1,9 +1,11 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Logged Out | GA Attendance{% endblock %}
+{% block title %}
+  Logged Out | GA Attendance
+{% endblock %}
 
 {% block content %}
-<h2>You have been logged out.</h2>
-<a href="{% url 'login' %}">Login again</a>
-<a href="{% url 'signup' %}">Sign Up</a>
+  <h2>You have been logged out.</h2>
+  <a href="{% url 'login' %}">Login again</a>
+  <a href="{% url 'signup' %}">Sign Up</a>
 {% endblock %}
