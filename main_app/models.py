@@ -3,12 +3,14 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+# Choices for attendance status.
 STATUS_CHOICES = [
     ('P', 'Present'),
     ('A', 'Absent'),
     ('L', 'Late'),
 ]
 
+# Model for user profiles.
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     email = models.EmailField(unique=True)
@@ -28,6 +30,7 @@ class Profile(models.Model):
             models.Index(fields=['email']),
         ]
 
+# Model for classes.
 class Class(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
@@ -37,6 +40,7 @@ class Class(models.Model):
     def __str__(self):
         return self.name
 
+# Model for attendance records.
 class Attendance(models.Model):
     student = models.ForeignKey(Profile, on_delete=models.CASCADE)
     classid = models.ForeignKey(Class, on_delete=models.CASCADE)
@@ -46,11 +50,13 @@ class Attendance(models.Model):
     def __str__(self):
         return f"{self.student.user.username} - {self.classid.name} on {self.date} - {self.get_status_display()}"
 
+# Signal to create a profile when a user is created.
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance, email=instance.email)
 
+# Signal to save a profile when a user is saved.
 @receiver(post_save, sender=User)
 def save_profile(sender, instance, **kwargs):
     if hasattr(instance, 'profile'):

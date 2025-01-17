@@ -7,35 +7,37 @@ from .forms import UserRegistrationForm, ProfileForm, ClassForm, StudentSearchFo
 from .models import Profile, Class, Attendance
 from django.urls import reverse_lazy
 
+# Handle user registration.
 def signup(request):
     if request.method == 'POST':
         user_form = UserRegistrationForm(request.POST)
         if user_form.is_valid():
             user = user_form.save(commit=False)
-            user.email = user_form.cleaned_data['email']  # Set the email
+            user.email = user_form.cleaned_data['email']
             user.set_password(user_form.cleaned_data['password'])
             user.save()
-            # Profile is automatically created via the signal
             login(request, user)
             return redirect('profile') 
     else:
         user_form = UserRegistrationForm()
-    return render(request, 'registration/signup.html', {
-        'user_form': user_form,
-    })
+    return render(request, 'registration/signup.html', {'user_form': user_form})
 
+# Custom login view.
 class CustomLoginView(LoginView):
     template_name = 'registration/login.html'
     def get_success_url(self): 
         return reverse_lazy('home')
-    
+
+# Custom logout view.
 class CustomLogoutView(LogoutView):
     next_page = reverse_lazy('home')
 
+# Display user profile.
 @login_required
 def profile(request):
     return render(request, 'profile.html', {'user': request.user})
 
+# Edit user profile.
 @login_required 
 def edit_profile(request): 
     profile = get_object_or_404(Profile, user=request.user) 
@@ -48,9 +50,11 @@ def edit_profile(request):
         form = ProfileForm(instance=profile) 
     return render(request, 'edit_profile.html', {'form': form})
 
+# Render homepage.
 def home(request):
     return render(request, 'home.html')
 
+# Create a new class (teacher only).
 @login_required
 def create_class(request):
     if request.user.profile.role != 'Teacher':
@@ -66,11 +70,13 @@ def create_class(request):
         form = ClassForm()
     return render(request, 'create_class.html', {'form': form})
 
+# Display class details.
 @login_required
 def class_detail(request, pk):
     class_ = get_object_or_404(Class, pk=pk)
     return render(request, 'class_detail.html', {'class': class_})
 
+# Manage classes (teacher only).
 @login_required
 def manage_classes(request):
     if request.user.profile.role != 'Teacher':
@@ -78,6 +84,7 @@ def manage_classes(request):
     classes = Class.objects.filter(teacher=request.user.profile)
     return render(request, 'manage_classes.html', {'classes': classes})
 
+# Add a student to a class (teacher only).
 @login_required
 def add_student(request, pk):
     class_ = get_object_or_404(Class, pk=pk)
@@ -99,6 +106,7 @@ def add_student(request, pk):
     
     return render(request, 'add_student.html', {'class': class_, 'search_form': search_form})
 
+# Search for classes.
 @login_required
 def search_classes(request):
     if request.method == 'POST':
@@ -107,6 +115,7 @@ def search_classes(request):
         return render(request, 'search_classes.html', {'classes': classes, 'query': query})
     return render(request, 'search_classes.html')
 
+# Send a join request to a class (student only).
 @login_required
 def send_join_request(request, pk):
     class_ = get_object_or_404(Class, pk=pk)
@@ -115,11 +124,13 @@ def send_join_request(request, pk):
     class_.students.add(request.user.profile)
     return redirect('class_detail', pk=pk)
 
+# View all classes a user is enrolled in.
 @login_required
 def view_classes(request):
     classes = request.user.profile.classes.all()
     return render(request, 'view_classes.html', {'classes': classes})
 
+# Leave a class (student only).
 @login_required
 def leave_class(request, pk):
     class_ = get_object_or_404(Class, pk=pk)
@@ -128,6 +139,7 @@ def leave_class(request, pk):
     class_.students.remove(request.user.profile)
     return redirect('view_classes')
 
+# Remove a student from a class (teacher only).
 @login_required
 def remove_student(request, class_pk, student_pk):
     class_ = get_object_or_404(Class, pk=class_pk)
@@ -137,6 +149,7 @@ def remove_student(request, class_pk, student_pk):
     class_.students.remove(student_profile)
     return redirect('class_detail', pk=class_pk)
 
+# Mark attendance inline for a student (teacher only).
 @login_required
 def mark_attendance_inline(request, class_pk, student_pk):
     class_instance = get_object_or_404(Class, pk=class_pk)
@@ -157,11 +170,13 @@ def mark_attendance_inline(request, class_pk, student_pk):
 
     return render(request, 'class_detail.html', {'class': class_instance, 'form': form, 'student_profile': student_profile})
 
+# Display all attendance records.
 @login_required
 def attendance_records(request):
     records = Attendance.objects.all()
     return render(request, 'attendance_records.html', {'records': records})
 
+# Display profile details and attendance summary.
 @login_required
 def profile_detail(request, pk):
     profile = Profile.objects.get(pk=pk)
@@ -175,7 +190,7 @@ def profile_detail(request, pk):
         attendance_summary[class_] = percentage
     return render(request, 'profile_detail.html', {'profile': profile, 'attendance_summary': attendance_summary})
 
-
+# Delete a class (teacher only).
 @login_required
 def delete_class(request, class_id):
     class_instance = get_object_or_404(Class, pk=class_id)
