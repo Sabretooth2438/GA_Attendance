@@ -10,7 +10,7 @@ Effortlessly manage student attendance with **GA-Attendance**. This app streamli
 ## Technologies Used
 - Django (Web Framework)
 - Python (Programming Language)
-- SQLite (Database)
+- PostgreSQL (Database)
 - HTML/CSS (Frontend)
 - Bootstrap (Styling)
 
