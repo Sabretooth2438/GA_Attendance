@@ -1,74 +1,88 @@
-
 {% extends "base.html" %}
-
-{% block title %}Class Detail | GA Attendance{% endblock %}
-
 {% block content %}
+
 <h2>{{ class.name }}</h2>
 <p>{{ class.description }}</p>
 <p>Teacher: {{ class.teacher.user.username }}</p>
-<p>Today's Date: <span class="current-date"{{date}}></span></p>
-<p>Students:</p>
-<ul>
-    {% for student in class.students.all %}
-        <li>
-            {{ student.user.username }}
-            {% if user.profile == class.teacher %}
-                <form method="post" action="{% url 'mark_attendance_inline' class_pk=class.pk student_pk=student.pk %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="student" value="{{ student.pk }}">
-                    <input type="hidden" name="classid" value="{{ class.pk }}">
-                    <br><br>
-                    <select name="status" class='browser-default' required>
-                        <option value="P">Present</option>
-                        <option value="A">Absent</option>
-                        <option value="L">Late</option>
-                    </select>
-                    <br><br>
-                    <button type="submit">Mark Attendance</button>
-                </form>
-            {% endif %}
-            {% if user.profile == class.teacher %}
-                <form method="post" action="{% url 'remove_student' class_pk=class.pk student_pk=student.pk %}">
-                    {% csrf_token %}
-                    <button type="submit">Remove</button>
-                </form>
-            {% endif %}
-        </li>
-    {% endfor %}
-</ul>
+<p>Today's Date: <span class="current-date">{{ date }}</span></p>
 
-{% if user.profile.role == 'Student' and user.profile in class.students.all %}
-    <form method="post" action="{% url 'leave_class' pk=class.pk %}">
+{% if user.profile == class.teacher %}
+    <a href="{% url 'manage_join_requests' pk=class.pk %}">Manage Join Requests</a>
+
+    <h3>Mark Attendance</h3>
+    <form method="post">
         {% csrf_token %}
-        <button type="submit">Leave Class</button>
+        {{ formset.management_form }}
+    
+        <table>
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th>Remove</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for form, student in zipped_data %}
+                    <tr>
+                        <td>
+                        {{ student.user.username }}
+                        {{ form.student.as_hidden }}
+                        </td>
+                        <td>{{ form.status }}</td>  <!-- <select> with choices -->
+                        <td>{{ form.reason }}</td>  <!-- <textarea> -->
+                        <td>
+                        <form method="post" action="{% url 'remove_student' class.pk student.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit">Remove</button>
+                        </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    
+        <button type="submit">Submit Attendance</button>
     </form>
+    
+
+{% else %}
+    <p>Students:</p>
+    <ul>
+    {% if students %}
+        {% for student in students %}
+            <li>{{ student.user.username }}</li>
+        {% endfor %}
+    {% else %}
+        <li>No students are currently enrolled.</li>
+    {% endif %}
+    </ul>
 {% endif %}
+
 {% endblock %}
 
-
-{% comment %} 
-{% extends "base.html" %}
-
-{% block title %}Class Detail | GA Attendance{% endblock %}
-
-{% block content %}
-<h2>{{ class.name }}</h2>
-<p>{{ class.description }}</p>
-<p>Teacher: {{ class.teacher.user.username }}</p>
-<p>Today's Date: {{ current_date }}</p>
-<p>Students:</p>
-<form method="post">
-    {% csrf_token %}
-    {{ formset.management_form }}
-    <ul>
-        {% for form in formset %}
-            <li>
-                {{ form.student.value|default_if_none:"" }} - {{ form.student }}
-                {{ form.status }}
-            </li>
-        {% endfor %}
-    </ul>
-    <button type="submit">Mark Attendance</button>
-</form>
-{% endblock %} {% endcomment %}
+{% block extra_scripts %}
+{% comment %} <script>
+    // Toggle "Reason" visibility if status == "Excused"
+    document.querySelectorAll('select[name^="form-"][name$="-status"]').forEach(select => {
+        select.addEventListener('change', function() {
+            const formIndex = this.name.split('-')[1];
+            const reasonName = `form-${formIndex}-reason`;
+            const reasonField = document.querySelector(`textarea[name="${reasonName}"]`);
+            if (!reasonField) return;
+    
+            if (this.value === 'E') {
+                reasonField.style.display = 'block';
+                reasonField.required = true;
+            } else {
+                reasonField.style.display = 'none';
+                reasonField.required = false;
+                reasonField.value = '';
+            }
+        });
+        // Trigger change on page load to set initial visibility
+        select.dispatchEvent(new Event('change'));
+    });
+  </script>   {% endcomment %}
+{% endblock %}

@@ -26,10 +26,13 @@ urlpatterns = [
     path('class/<int:pk>/leave/', views.leave_class, name='leave_class'),
     path('class/<int:class_pk>/remove_student/<int:student_pk>/', views.remove_student, name='remove_student'),
     path('class/<int:class_id>/delete/', views.delete_class, name='delete_class'),
+    path('class/<int:pk>/join_requests/', views.manage_join_requests, name='manage_join_requests'),
+
     
     # Attendance management routes.
     path('class/<int:class_pk>/mark_attendance/<int:student_pk>/', views.mark_attendance_inline, name='mark_attendance_inline'),
     path('class/<int:class_id>/attendance_records/', views.attendance_records, name='attendance_records'),
     path('class/<int:class_id>/edit/', views.edit_class, name='edit_class'),
     path('attendance/', views.student_attendance_records, name='student_attendance_records'),
+
 ]

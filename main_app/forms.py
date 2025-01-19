@@ -3,9 +3,6 @@ from django.contrib.auth.models import User
 from .models import Profile, Class, Attendance
 from django.forms import modelformset_factory
 
-
-AttendanceFormSet = modelformset_factory(Attendance, fields=['student', 'status'], extra=0)
-
 # Form for user registration.
 class UserRegistrationForm(forms.ModelForm):
     password = forms.CharField(label='Password', widget=forms.PasswordInput)
@@ -47,8 +44,13 @@ class StudentSearchForm(forms.Form):
 class AttendanceForm(forms.ModelForm):
     class Meta:
         model = Attendance
-        fields = ['status']
+        fields = ['student', 'status', 'reason']
 
+AttendanceFormSet = modelformset_factory(
+    Attendance, 
+    form=AttendanceForm, 
+    extra=0
+)
 
 class EditClassForm(forms.ModelForm):
     class Meta:

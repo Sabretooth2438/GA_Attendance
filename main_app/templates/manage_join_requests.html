@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Join Requests | GA Attendance{% endblock %}
+
+{% block content %}
+<h2>Manage Join Requests for {{ class.name }}</h2>
+<p>Teacher: {{ class.teacher.user.username }}</p>
+
+{% if join_requests %}
+    <table>
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for request in join_requests %}
+                <tr>
+                    <td>{{ request.student.user.username }}</td>
+                    <td>
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="request_id" value="{{ request.id }}">
+                            <button type="submit" name="action" value="approve">Approve</button>
+                            <button type="submit" name="action" value="reject">Reject</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No pending join requests.</p>
+{% endif %}
+{% endblock %}

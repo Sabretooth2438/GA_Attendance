@@ -4,11 +4,12 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from .forms import UserRegistrationForm, ProfileForm, ClassForm, StudentSearchForm, AttendanceForm, EditClassForm, AttendanceFormSet
-from .models import Profile, Class, Attendance
+from .models import Profile, Class, Attendance, JoinRequest
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.contrib import messages 
 import logging
+from django.forms import modelformset_factory
 
 
 logger = logging.getLogger(__name__)
@@ -80,8 +81,51 @@ def create_class(request):
 # Display class details.
 @login_required
 def class_detail(request, pk):
-    class_ = get_object_or_404(Class, pk=pk)
-    return render(request, 'class_detail.html', {'class': class_})
+    class_instance = get_object_or_404(Class, pk=pk)
+    students = class_instance.students.all()
+    date = timezone.now().date()
+
+    if request.user.profile.role == 'Teacher':
+        AttendanceFormSet = modelformset_factory(
+            Attendance,
+            fields=['student', 'status', 'reason'],
+            extra=len(students)
+        )
+
+        if request.method == 'POST':
+            formset = AttendanceFormSet(request.POST)
+            if formset.is_valid():
+                instances = formset.save(commit=False)
+                for instance, student in zip(instances, students):
+                    instance.student = student
+                    instance.classid = class_instance
+                    instance.date = date
+                    instance.save()
+                messages.success(request, "Attendance has been marked for all students.")
+                return redirect('class_detail', pk=pk)
+        else:
+            formset = AttendanceFormSet(queryset=Attendance.objects.none())
+            # Pre-fill student field
+            for form, student in zip(formset.forms, students):
+                form.initial['student'] = student.pk
+
+        # **Zip the formset and students here**:
+        zipped_data = zip(formset.forms, students)
+
+        return render(request, 'class_detail.html', {
+            'class': class_instance,
+            'formset': formset,       # If you still need formset in template
+            'students': students,     # If needed for other logic
+            'zipped_data': zipped_data,  # Pass zipped data to the template
+            'date': date
+        })
+
+    # Otherwise, student or non-teacher logic
+    return render(request, 'class_detail.html', {
+        'class': class_instance,
+        'students': students,
+        'date': date
+    })
 
 # Manage classes (teacher only).
 @login_required
@@ -161,13 +205,13 @@ def remove_student(request, class_pk, student_pk):
 def mark_attendance_inline(request, class_pk, student_pk):
     class_instance = get_object_or_404(Class, pk=class_pk)
     student_profile = get_object_or_404(Profile, pk=student_pk)
+
     if request.user.profile.role != 'Teacher' or request.user.profile != class_instance.teacher:
-        return redirect('home')  # Only the class teacher can mark attendance
+        return redirect('home')
 
     current_date = timezone.now().date()
 
     if request.method == 'POST':
-        # previous way
         form = AttendanceForm(request.POST)
         if form.is_valid():
             attendance = form.save(commit=False)
@@ -179,22 +223,7 @@ def mark_attendance_inline(request, class_pk, student_pk):
     else:
         form = AttendanceForm()
 
-    # new way to mark all attendance at once but not working
-    #     formset = AttendanceFormSet(request.POST) 
-    #     if formset.is_valid(): 
-    #         instances = formset.save(commit=False) 
-    #         for instance in instances: 
-    #             instance.classid = class_instance
-    #             instance.student = student_profile 
-    #             instance.date = current_date 
-    #             instance.save() 
-    #         return redirect('class_detail', pk=class_pk) 
-    # else: 
-    #     students = class_instance.students.all() 
-    #     initial_data = [{'student': student} for student in students] 
-    #     formset = AttendanceFormSet(queryset=Attendance.objects.none(), initial=initial_data)
-
-    # return render(request, 'class_detail.html', {'class': class_instance, 'formset': formset, 'date': current_date, 'student_profile': student_profile})
+    return render(request, 'class_detail.html', {'class': class_instance, 'form': form, 'student_profile': student_profile})
 
 # Display all attendance records.
 @login_required
@@ -268,3 +297,42 @@ def student_attendance_records(request):
         }
     )
 
+@login_required
+def send_join_request(request, pk):
+    class_instance = get_object_or_404(Class, pk=pk)
+    if request.user.profile.role != 'Student':
+        return redirect('home')
+
+    existing_request = JoinRequest.objects.filter(student=request.user.profile, classid=class_instance).first()
+    if not existing_request:
+        JoinRequest.objects.create(student=request.user.profile, classid=class_instance)
+        messages.success(request, "Your join request has been sent.")
+    else:
+        messages.info(request, "You have already sent a join request for this class.")
+
+    return redirect('class_detail', pk=pk)
+
+@login_required
+def manage_join_requests(request, pk):
+    class_instance = get_object_or_404(Class, pk=pk)
+    if request.user.profile != class_instance.teacher:
+        return redirect('home')
+
+    join_requests = JoinRequest.objects.filter(classid=class_instance, status='Pending')
+
+    if request.method == 'POST':
+        request_id = request.POST.get('request_id')
+        action = request.POST.get('action')
+        join_request = get_object_or_404(JoinRequest, id=request_id)
+
+        if action == 'approve':
+            join_request.status = 'Approved'
+            join_request.save()
+            class_instance.students.add(join_request.student)
+            messages.success(request, f"{join_request.student.user.username} has been approved.")
+        elif action == 'reject':
+            join_request.status = 'Rejected'
+            join_request.save()
+            messages.info(request, f"{join_request.student.user.username}'s request has been rejected.")
+
+    return render(request, 'manage_join_requests.html', {'class': class_instance, 'join_requests': join_requests})

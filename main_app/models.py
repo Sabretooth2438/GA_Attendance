@@ -8,6 +8,7 @@ STATUS_CHOICES = [
     ('P', 'Present'),
     ('A', 'Absent'),
     ('L', 'Late'),
+    ('E', 'Excused'),
 ]
 
 # Model for user profiles.
@@ -46,6 +47,7 @@ class Attendance(models.Model):
     classid = models.ForeignKey(Class, on_delete=models.CASCADE)
     date = models.DateField()
     status = models.CharField(max_length=1, choices=STATUS_CHOICES)
+    reason = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.student.user.username} - {self.classid.name} on {self.date} - {self.get_status_display()}"
@@ -61,3 +63,16 @@ def create_profile(sender, instance, created, **kwargs):
 def save_profile(sender, instance, **kwargs):
     if hasattr(instance, 'profile'):
         instance.profile.save()
+
+class JoinRequest(models.Model):
+    student = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='join_requests')
+    classid = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='join_requests')
+    status = models.CharField(
+        max_length=10,
+        choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')],
+        default='Pending'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student.user.username} -> {self.classid.name} ({self.status})"
