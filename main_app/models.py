@@ -26,6 +26,12 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.username
 
+    def completion_percentage(self):
+        fields = [self.bio, self.profile_img]
+        completed = sum(1 for field in fields if field and field != "default_profile.png")
+        total = len(fields)
+        return int((completed / total) * 100)
+
     class Meta:
         indexes = [
             models.Index(fields=['email']),
@@ -35,8 +41,14 @@ class Profile(models.Model):
 class Class(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
-    students = models.ManyToManyField(Profile, related_name='classes')
-    teacher = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='taught_classes')
+    start_date = models.DateField(null=True, blank=True)  # Optional field
+    end_date = models.DateField(null=True, blank=True)    # Optional field
+    teacher = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='taught_classes'
+    )
+    students = models.ManyToManyField(
+        User, related_name='enrolled_classes', blank=True
+    )
 
     def __str__(self):
         return self.name

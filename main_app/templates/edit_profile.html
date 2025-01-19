@@ -6,6 +6,12 @@
 
 {% block content %}
     <h2>Edit Profile</h2>
+    <div>
+        <p>Profile Completion: {{ completion_percentage }}%</p>
+        <div style="width: 100%; background-color: #f3f3f3; border: 1px solid #ddd;">
+            <div style="width: {{ completion_percentage }}%; background-color: #4caf50; height: 20px;"></div>
+        </div>
+    </div>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}

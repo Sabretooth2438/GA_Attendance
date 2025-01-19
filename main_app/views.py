@@ -24,7 +24,9 @@ def signup(request):
             user.set_password(user_form.cleaned_data['password'])
             user.save()
             login(request, user)
-            return redirect('profile') 
+            Profile.objects.create(user=user)  # Create an empty profile
+            return redirect('edit_profile')  # Redirect to profile editing
+            # return redirect('profile') 
     else:
         user_form = UserRegistrationForm()
     return render(request, 'registration/signup.html', {'user_form': user_form})
@@ -56,7 +58,9 @@ def edit_profile(request):
             return redirect('profile') 
     else: 
         form = ProfileForm(instance=profile) 
-    return render(request, 'edit_profile.html', {'form': form})
+
+    completion_percentage = profile.completion_percentage()
+    return render(request, 'edit_profile.html', {'form': form, 'completion_percentage': completion_percentage})
 
 # Render homepage.
 def home(request):
@@ -67,16 +71,19 @@ def home(request):
 def create_class(request):
     if request.user.profile.role != 'Teacher':
         return redirect('home')
+
     if request.method == 'POST':
         form = ClassForm(request.POST)
         if form.is_valid():
-            class_ = form.save(commit=False)
-            class_.teacher = request.user.profile
-            class_.save()
-            return redirect('class_detail', pk=class_.pk)
+            class_instance = form.save(commit=False)
+            class_instance.teacher = request.user.profile
+            class_instance.save()
+            return redirect('class_detail', pk=class_instance.pk)
     else:
         form = ClassForm()
+
     return render(request, 'create_class.html', {'form': form})
+
 
 # Display class details.
 @login_required
@@ -233,17 +240,41 @@ def attendance_records(request):
 
 # Display profile details and attendance summary.
 @login_required
-def profile_detail(request, pk):
-    profile = Profile.objects.get(pk=pk)
+def profile_detail(request, pk, class_pk=None):
+    profile = get_object_or_404(Profile, pk=pk)
     classes = profile.classes.all()
     attendance_summary = {}
-    for class_ in classes:
-        records = Attendance.objects.filter(student=profile, classid=class_)
-        total = records.count()
-        present = records.filter(status='P').count()
-        percentage = (present / total) * 100 if total > 0 else 0
-        attendance_summary[class_] = percentage
-    return render(request, 'profile_detail.html', {'profile': profile, 'attendance_summary': attendance_summary})
+    attendance_records = None
+    absence_percentage = None
+
+    # If a class_pk is provided, filter attendance records for that class
+    if class_pk:
+        class_instance = get_object_or_404(Class, pk=class_pk)
+        # Ensure the requesting user is the teacher of the class
+        if request.user.profile.role != 'Teacher' or request.user.profile != class_instance.teacher:
+            return redirect('home')
+        
+        attendance_records = Attendance.objects.filter(student=profile, classid=class_instance).order_by('date')
+        total_classes = attendance_records.count()
+        absences = attendance_records.filter(status='A').count()
+        absence_percentage = (absences / total_classes) * 100 if total_classes > 0 else 0
+    else:
+        # Calculate attendance summary for all classes (existing functionality)
+        for class_ in classes:
+            records = Attendance.objects.filter(student=profile, classid=class_)
+            total = records.count()
+            present = records.filter(status='P').count()
+            percentage = (present / total) * 100 if total > 0 else 0
+            attendance_summary[class_] = percentage
+
+    return render(request, 'profile_detail.html', {
+        'profile': profile,
+        'classes': classes,
+        'attendance_summary': attendance_summary,
+        'attendance_records': attendance_records,
+        'absence_percentage': absence_percentage,
+    })
+
 
 # Delete a class (teacher only).
 @login_required
@@ -260,18 +291,20 @@ def delete_class(request, class_id):
 @login_required
 def edit_class(request, class_id):
     class_instance = get_object_or_404(Class, pk=class_id)
+
     if request.user.profile != class_instance.teacher:
         return redirect('home')
 
     if request.method == 'POST':
-        form = EditClassForm(request.POST, instance=class_instance)
+        form = ClassForm(request.POST, instance=class_instance)
         if form.is_valid():
             form.save()
             return redirect('class_detail', pk=class_id)
     else:
-        form = EditClassForm(instance=class_instance)
-    
+        form = ClassForm(instance=class_instance)
+
     return render(request, 'edit_class.html', {'form': form, 'class': class_instance})
+
 
 @login_required
 def student_attendance_records(request):
@@ -279,23 +312,18 @@ def student_attendance_records(request):
         return redirect('home')
 
     attendance_records = Attendance.objects.filter(student=request.user.profile).order_by('date')
-
     total_classes = attendance_records.count()
     absences = attendance_records.filter(status='A').count()
 
+    # Calculate absence percentage
     absence_percentage = (absences / total_classes) * 100 if total_classes > 0 else 0
+    warning = absence_percentage > 25  # Warn if absence exceeds 25%
 
-    removal_warning = absence_percentage > 25
-
-    return render(
-        request,
-        'attendance_records.html',
-        {
-            'records': attendance_records,
-            'absence_percentage': absence_percentage,
-            'removal_warning': removal_warning,
-        }
-    )
+    return render(request, 'attendance_records.html', {
+        'records': attendance_records,
+        'absence_percentage': absence_percentage,
+        'warning': warning,
+    })
 
 @login_required
 def send_join_request(request, pk):
@@ -336,3 +364,37 @@ def manage_join_requests(request, pk):
             messages.info(request, f"{join_request.student.user.username}'s request has been rejected.")
 
     return render(request, 'manage_join_requests.html', {'class': class_instance, 'join_requests': join_requests})
+
+@login_required
+def edit_attendance(request, class_pk, student_pk):
+    class_instance = get_object_or_404(Class, pk=class_pk)
+    student_profile = get_object_or_404(Profile, pk=student_pk)
+
+    # Ensure the requesting user is the teacher of the class
+    if request.user.profile.role != 'Teacher' or request.user.profile != class_instance.teacher:
+        return redirect('home')
+
+    # Fetch all attendance records for the student in the class
+    attendance_records = Attendance.objects.filter(student=student_profile, classid=class_instance).order_by('date')
+
+    # Use a modelformset for inline editing
+    AttendanceFormSet = modelformset_factory(
+        Attendance,
+        fields=['date', 'status', 'reason'],
+        extra=0
+    )
+
+    if request.method == 'POST':
+        formset = AttendanceFormSet(request.POST, queryset=attendance_records)
+        if formset.is_valid():
+            formset.save()  # Save all changes
+            messages.success(request, "Attendance records have been updated.")
+            return redirect('student_profile', class_pk=class_pk, pk=student_pk)
+    else:
+        formset = AttendanceFormSet(queryset=attendance_records)
+
+    return render(request, 'edit_attendance.html', {
+        'class_instance': class_instance,
+        'student_profile': student_profile,
+        'formset': formset,
+    })

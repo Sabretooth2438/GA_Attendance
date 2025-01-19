@@ -31,10 +31,14 @@ class ProfileForm(forms.ModelForm):
         fields = ['bio', 'profile_img']
 
 # Form for class creation and editing.
-class ClassForm(forms.ModelForm): 
-    class Meta: 
+class ClassForm(forms.ModelForm):
+    class Meta:
         model = Class
-        fields = ['name', 'description']
+        fields = ['name', 'description', 'start_date', 'end_date']
+        widgets = {
+            'start_date': forms.DateInput(attrs={'type': 'date', 'class': 'date-selector'}),
+            'end_date': forms.DateInput(attrs={'type': 'date', 'class': 'date-selector'}),
+        }
 
 # Form for student search by username.
 class StudentSearchForm(forms.Form):

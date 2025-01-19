@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Attendance | GA Attendance{% endblock %}
+
+{% block content %}
+<h2>Edit Attendance for {{ student_profile.user.username }} in {{ class_instance.name }}</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Reason (Optional)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for form in formset %}
+                <tr>
+                    <td>{{ form.date }}</td>
+                    <td>{{ form.status }}</td>
+                    <td>{{ form.reason }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit">Save Changes</button>
+</form>
+{% endblock %}

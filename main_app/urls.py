@@ -27,6 +27,7 @@ urlpatterns = [
     path('class/<int:class_pk>/remove_student/<int:student_pk>/', views.remove_student, name='remove_student'),
     path('class/<int:class_id>/delete/', views.delete_class, name='delete_class'),
     path('class/<int:pk>/join_requests/', views.manage_join_requests, name='manage_join_requests'),
+    path('class/<int:class_pk>/student/<int:pk>/', views.profile_detail, name='student_profile'), 
 
     
     # Attendance management routes.
