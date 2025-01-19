@@ -38,7 +38,7 @@
                 {% endif %}
                 {% if user.profile and user.profile.pk %}
                 <li>
-                    <a href="{% url 'profile_detail' pk=user.profile.pk %}">Profile</a>
+                    <a href="{% url 'profile' %}">Profile</a>
                 </li>
                 {% else %}
                 <li>
@@ -64,9 +64,16 @@
         </header>
 
         <main>
-        {% block content %}
-
-        {% endblock %}
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="message {{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            {% block content %}
+            {% endblock %}
         </main>
 
         <footer>

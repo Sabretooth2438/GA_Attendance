@@ -1,6 +1,10 @@
 from django import forms
 from django.contrib.auth.models import User
 from .models import Profile, Class, Attendance
+from django.forms import modelformset_factory
+
+
+AttendanceFormSet = modelformset_factory(Attendance, fields=['student', 'status'], extra=0)
 
 # Form for user registration.
 class UserRegistrationForm(forms.ModelForm):

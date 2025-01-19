@@ -5,11 +5,18 @@
 {% endblock %}
 
 {% block content %}
-    <h2>Attendance Records for {{ class.name }}</h2>
+    <h2>Your Attendance Records</h2>
+    <p>Absence Percentage: {{ absence_percentage }}%</p>
+
+    {% if removal_warning %}
+        <p style="color: red; font-weight: bold;">
+            Warning: Your absence percentage exceeds 25%. Please contact your teacher to avoid removal from the class.
+        </p>
+    {% endif %}
+    
     <table>
         <thead>
         <tr>
-            <th>Student</th>
             <th>Date</th>
             <th>Status</th>
         </tr>
@@ -17,9 +24,8 @@
         <tbody>
         {% for record in records %}
             <tr>
-            <td>{{ record.student.user.username }}</td>
-            <td>{{ record.date }}</td>
-            <td>{{ record.get_status_display }}</td>
+                <td>{{ record.date }}</td>
+                <td>{{ record.get_status_display }}</td>
             </tr>
         {% endfor %}
         </tbody>

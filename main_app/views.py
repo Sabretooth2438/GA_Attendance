@@ -3,10 +3,15 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
-from .forms import UserRegistrationForm, ProfileForm, ClassForm, StudentSearchForm, AttendanceForm, EditClassForm
+from .forms import UserRegistrationForm, ProfileForm, ClassForm, StudentSearchForm, AttendanceForm, EditClassForm, AttendanceFormSet
 from .models import Profile, Class, Attendance
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.contrib import messages 
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 # Handle user registration.
 def signup(request):
@@ -46,6 +51,7 @@ def edit_profile(request):
         form = ProfileForm(request.POST, request.FILES, instance=profile) 
         if form.is_valid(): 
             form.save() 
+            messages.success(request, "Your profile has been updated successfully.")
             return redirect('profile') 
     else: 
         form = ProfileForm(instance=profile) 
@@ -161,6 +167,7 @@ def mark_attendance_inline(request, class_pk, student_pk):
     current_date = timezone.now().date()
 
     if request.method == 'POST':
+        # previous way
         form = AttendanceForm(request.POST)
         if form.is_valid():
             attendance = form.save(commit=False)
@@ -172,7 +179,22 @@ def mark_attendance_inline(request, class_pk, student_pk):
     else:
         form = AttendanceForm()
 
-    return render(request, 'class_detail.html', {'class': class_instance, 'form': form, 'student_profile': student_profile})
+    # new way to mark all attendance at once but not working
+    #     formset = AttendanceFormSet(request.POST) 
+    #     if formset.is_valid(): 
+    #         instances = formset.save(commit=False) 
+    #         for instance in instances: 
+    #             instance.classid = class_instance
+    #             instance.student = student_profile 
+    #             instance.date = current_date 
+    #             instance.save() 
+    #         return redirect('class_detail', pk=class_pk) 
+    # else: 
+    #     students = class_instance.students.all() 
+    #     initial_data = [{'student': student} for student in students] 
+    #     formset = AttendanceFormSet(queryset=Attendance.objects.none(), initial=initial_data)
+
+    # return render(request, 'class_detail.html', {'class': class_instance, 'formset': formset, 'date': current_date, 'student_profile': student_profile})
 
 # Display all attendance records.
 @login_required
@@ -210,7 +232,7 @@ def delete_class(request, class_id):
 def edit_class(request, class_id):
     class_instance = get_object_or_404(Class, pk=class_id)
     if request.user.profile != class_instance.teacher:
-        return redirect('home')  # Only the class teacher can edit the class
+        return redirect('home')
 
     if request.method == 'POST':
         form = EditClassForm(request.POST, instance=class_instance)
@@ -221,3 +243,28 @@ def edit_class(request, class_id):
         form = EditClassForm(instance=class_instance)
     
     return render(request, 'edit_class.html', {'form': form, 'class': class_instance})
+
+@login_required
+def student_attendance_records(request):
+    if request.user.profile.role != 'Student':
+        return redirect('home')
+
+    attendance_records = Attendance.objects.filter(student=request.user.profile).order_by('date')
+
+    total_classes = attendance_records.count()
+    absences = attendance_records.filter(status='A').count()
+
+    absence_percentage = (absences / total_classes) * 100 if total_classes > 0 else 0
+
+    removal_warning = absence_percentage > 25
+
+    return render(
+        request,
+        'attendance_records.html',
+        {
+            'records': attendance_records,
+            'absence_percentage': absence_percentage,
+            'removal_warning': removal_warning,
+        }
+    )
+

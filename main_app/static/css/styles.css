@@ -22,6 +22,20 @@
   color: #333;
 }
 
+.messages {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #d4edda;
+  background-color: #d4edda;
+  color: #155724;
+  border-radius: 5px;
+}
+.message.error {
+  border-color: #f8d7da;
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
 @media (max-width: 768px) {
   .burger-menu {
       display: block;
