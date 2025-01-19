@@ -1,61 +1,45 @@
-{% extends 'base.html' %}
+<!-- main_app/templates/class_detail.html -->
+{% extends "base.html" %}
 
-{% block title %}
-    Class Detail | GA Attendance
-{% endblock %}
+{% block title %}Class Detail | GA Attendance{% endblock %}
 
 {% block content %}
-    <h2>{{ class.name }}</h2>
-    <p>{{ class.description }}</p>
-    <p>Teacher: {{ class.teacher.user.username }}</p>
-    <p>Students:</p>
-    <ul>
-        {% for student in class.students.all %}
+<h2>{{ class.name }}</h2>
+<p>{{ class.description }}</p>
+<p>Teacher: {{ class.teacher.user.username }}</p>
+<p>Today's Date: {{ current_date }}</p>
+<p>Students:</p>
+<ul>
+    {% for student in class.students.all %}
         <li>
             {{ student.user.username }}
             {% if user.profile == class.teacher %}
-            <form method="post" action="{% url 'mark_attendance_inline' class_pk=class.pk student_pk=student.pk %}">
-                {% csrf_token %}
-                <input type="hidden" name="student" value="{{ student.pk }}" />
-                <input type="hidden" name="classid" value="{{ class.pk }}" />
-                <input type="date" name="date" class="datepicker" required />
-                <select name="status" class="browser-default" required>
-                <option value="P">Present</option> <option value="A">Absent</option> <option value="L">Late</option>
-                </select>
-                <button type="submit">Mark Attendance</button>
-            </form>
+                <form method="post" action="{% url 'mark_attendance_inline' class_pk=class.pk student_pk=student.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="student" value="{{ student.pk }}">
+                    <input type="hidden" name="classid" value="{{ class.pk }}">
+                    <select name="status" required>
+                        <option value="P">Present</option>
+                        <option value="A">Absent</option>
+                        <option value="L">Late</option>
+                    </select>
+                    <button type="submit">Mark Attendance</button>
+                </form>
             {% endif %}
             {% if user.profile == class.teacher %}
-            <form method="post" action="{% url 'remove_student' class_pk=class.pk student_pk=student.pk %}">
-                {% csrf_token %}
-                <button type="submit">Remove</button>
-            </form>
+                <form method="post" action="{% url 'remove_student' class_pk=class.pk student_pk=student.pk %}">
+                    {% csrf_token %}
+                    <button type="submit">Remove</button>
+                </form>
             {% endif %}
         </li>
-        {% endfor %}
-    </ul>
+    {% endfor %}
+</ul>
 
-    {% if user.profile.role == 'Student' and user.profile in class.students.all %}
-        <form method="post" action="{% url 'leave_class' pk=class.pk %}">
+{% if user.profile.role == 'Student' and user.profile in class.students.all %}
+    <form method="post" action="{% url 'leave_class' pk=class.pk %}">
         {% csrf_token %}
         <button type="submit">Leave Class</button>
-        </form>
-    {% endif %}
-{% endblock %}
-
-{% block extra_js %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-        var dateElems = document.querySelectorAll('.datepicker')
-        M.Datepicker.init(dateElems, {
-            format: 'yyyy-mm-dd',
-            defaultDate: new Date(),
-            setDefaultDate: true,
-            autoClose: true
-        })
-        
-        var selectElems = document.querySelectorAll('select')
-        M.FormSelect.init(selectElems)
-        })
-    </script>
+    </form>
+{% endif %}
 {% endblock %}

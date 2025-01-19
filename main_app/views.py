@@ -6,6 +6,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from .forms import UserRegistrationForm, ProfileForm, ClassForm, StudentSearchForm, AttendanceForm, EditClassForm
 from .models import Profile, Class, Attendance
 from django.urls import reverse_lazy
+from django.utils import timezone
 
 # Handle user registration.
 def signup(request):
@@ -149,13 +150,15 @@ def remove_student(request, class_pk, student_pk):
     class_.students.remove(student_profile)
     return redirect('class_detail', pk=class_pk)
 
-# Mark attendance inline for a student (teacher only).
+
 @login_required
 def mark_attendance_inline(request, class_pk, student_pk):
     class_instance = get_object_or_404(Class, pk=class_pk)
     student_profile = get_object_or_404(Profile, pk=student_pk)
     if request.user.profile.role != 'Teacher' or request.user.profile != class_instance.teacher:
-        return redirect('home')
+        return redirect('home')  # Only the class teacher can mark attendance
+
+    current_date = timezone.now().date()
 
     if request.method == 'POST':
         form = AttendanceForm(request.POST)
@@ -163,6 +166,7 @@ def mark_attendance_inline(request, class_pk, student_pk):
             attendance = form.save(commit=False)
             attendance.classid = class_instance
             attendance.student = student_profile
+            attendance.date = current_date
             attendance.save()
             return redirect('class_detail', pk=class_pk)
     else:
