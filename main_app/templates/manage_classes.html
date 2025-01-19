@@ -10,6 +10,7 @@
         {% for class in classes %}
         <li>
             <a href="{% url 'class_detail' pk=class.pk %}">{{ class.name }}</a>
+            <a href="{% url 'edit_class' class_id=class.pk %}">Edit</a>
             <a href="{% url 'delete_class' class_id=class.pk %}">Delete</a>
         </li>
         {% endfor %}

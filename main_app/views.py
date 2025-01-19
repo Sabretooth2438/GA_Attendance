@@ -3,7 +3,7 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
-from .forms import UserRegistrationForm, ProfileForm, ClassForm, StudentSearchForm, AttendanceForm
+from .forms import UserRegistrationForm, ProfileForm, ClassForm, StudentSearchForm, AttendanceForm, EditClassForm
 from .models import Profile, Class, Attendance
 from django.urls import reverse_lazy
 
@@ -201,3 +201,19 @@ def delete_class(request, class_id):
     else:
         return redirect('home')
     return render(request, 'delete_class.html', {'class': class_instance})
+
+@login_required
+def edit_class(request, class_id):
+    class_instance = get_object_or_404(Class, pk=class_id)
+    if request.user.profile != class_instance.teacher:
+        return redirect('home')  # Only the class teacher can edit the class
+
+    if request.method == 'POST':
+        form = EditClassForm(request.POST, instance=class_instance)
+        if form.is_valid():
+            form.save()
+            return redirect('class_detail', pk=class_id)
+    else:
+        form = EditClassForm(instance=class_instance)
+    
+    return render(request, 'edit_class.html', {'form': form, 'class': class_instance})

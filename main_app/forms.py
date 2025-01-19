@@ -44,3 +44,9 @@ class AttendanceForm(forms.ModelForm):
     class Meta:
         model = Attendance
         fields = ['date', 'status']
+
+
+class EditClassForm(forms.ModelForm):
+    class Meta:
+        model = Class
+        fields = ['name', 'description']
