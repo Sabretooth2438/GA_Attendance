@@ -4,9 +4,9 @@
 
 {% block content %}
 <h2>Your Attendance Records</h2>
-<p>Absence Percentage: {{ absence_percentage }}%</p>
+<p><strong>Absence Percentage:</strong> {{ absence_percentage }}%</p>
 {% if warning %}
-    <p style="color: red;">Warning: Your absence percentage exceeds 25%!</p>
+    <p class="warning-text">Warning: Your absence percentage exceeds 25%!</p>
 {% endif %}
 
 <table>
@@ -22,13 +22,13 @@
                 <td>{{ record.date }}</td>
                 <td>
                     {% if record.status == 'P' %}
-                        Present
+                        ✅ Present
                     {% elif record.status == 'A' %}
-                        Absent
+                        ❌ Absent
                     {% elif record.status == 'L' %}
-                        Late
+                        ⏰ Late
                     {% elif record.status == 'E' %}
-                        Excused
+                        ✉️ Excused
                     {% endif %}
                 </td>
             </tr>

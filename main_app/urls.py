@@ -12,7 +12,7 @@ urlpatterns = [
     
     # User profile routes.
     path('profile/', views.profile, name='profile'),
-    path('profile/<int:pk>/', views.profile_detail, name='profile_detail'),
+    path('profile/<int:user_id>/', views.profile_detail, name='profile_detail'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     
     # Class management routes.
@@ -27,7 +27,8 @@ urlpatterns = [
     path('class/<int:class_pk>/remove_student/<int:student_pk>/', views.remove_student, name='remove_student'),
     path('class/<int:class_id>/delete/', views.delete_class, name='delete_class'),
     path('class/<int:pk>/join_requests/', views.manage_join_requests, name='manage_join_requests'),
-    path('class/<int:class_pk>/student/<int:pk>/', views.profile_detail, name='student_profile'), 
+    path('class/<int:class_pk>/student/<int:pk>/', views.profile_detail, name='student_profile'),
+    path('class/<int:class_pk>/edit_attendance/<int:student_pk>/', views.edit_attendance, name='edit_attendance'),
 
     
     # Attendance management routes.

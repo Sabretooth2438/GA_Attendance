@@ -1,9 +1,13 @@
-from django.contrib.auth.models import User
 from django.db import models
+from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-# Choices for attendance status.
+ROLE_CHOICES = [
+    ('Teacher', 'Teacher'),
+    ('Student', 'Student'),
+]
+
 STATUS_CHOICES = [
     ('P', 'Present'),
     ('A', 'Absent'),
@@ -11,74 +15,63 @@ STATUS_CHOICES = [
     ('E', 'Excused'),
 ]
 
-# Model for user profiles.
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='Student')
     bio = models.TextField(blank=True)
-    profile_img = models.ImageField(upload_to='profile_images/', blank=True, default="default_profile.png")
-    role = models.CharField(
-        max_length=10,
-        choices=[('Teacher', 'Teacher'), ('Student', 'Student')],
-        default='Student'
-    )
+    profile_img = models.ImageField(upload_to='profile_images/', blank=True, default='some_default.jpg')
 
     def __str__(self):
         return self.user.username
-
+    
     def completion_percentage(self):
         fields = [self.bio, self.profile_img]
-        completed = sum(1 for field in fields if field and field != "default_profile.png")
+        filled = sum(1 for field in fields if field)
         total = len(fields)
-        return int((completed / total) * 100)
+        return int(filled / total * 100) if total else 0
 
-    class Meta:
-        indexes = [
-            models.Index(fields=['email']),
-        ]
+# Auto-create or update a Profile whenever a User is saved
+@receiver(post_save, sender=User)
+def create_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
 
-# Model for classes.
+@receiver(post_save, sender=User)
+def save_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'profile'):
+        instance.profile.save()
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+    else:
+        instance.profile.save()
+
 class Class(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
-    start_date = models.DateField(null=True, blank=True)  # Optional field
-    end_date = models.DateField(null=True, blank=True)    # Optional field
-    teacher = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='taught_classes'
-    )
-    students = models.ManyToManyField(
-        User, related_name='enrolled_classes', blank=True
-    )
+    start_date = models.DateField(null=True, blank=True)  
+    end_date = models.DateField(null=True, blank=True)   
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='taught_classes')
+    students = models.ManyToManyField(User, related_name='enrolled_classes', blank=True)
 
     def __str__(self):
         return self.name
 
-# Model for attendance records.
 class Attendance(models.Model):
-    student = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
     classid = models.ForeignKey(Class, on_delete=models.CASCADE)
     date = models.DateField()
     status = models.CharField(max_length=1, choices=STATUS_CHOICES)
     reason = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.student.user.username} - {self.classid.name} on {self.date} - {self.get_status_display()}"
-
-# Signal to create a profile when a user is created.
-@receiver(post_save, sender=User)
-def create_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance, email=instance.email)
-
-# Signal to save a profile when a user is saved.
-@receiver(post_save, sender=User)
-def save_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'profile'):
-        instance.profile.save()
+        return f"{self.student.username} - {self.classid.name} on {self.date} ({self.get_status_display()})"
 
 class JoinRequest(models.Model):
-    student = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='join_requests')
-    classid = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='join_requests')
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    classid = models.ForeignKey(Class, on_delete=models.CASCADE)
     status = models.CharField(
         max_length=10,
         choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')],
@@ -87,4 +80,4 @@ class JoinRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.student.user.username} -> {self.classid.name} ({self.status})"
+        return f"{self.student.username} -> {self.classid.name} ({self.status})"

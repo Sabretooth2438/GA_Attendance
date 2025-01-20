@@ -36,6 +36,407 @@
   color: #721c24;
 }
 
+select {
+  display: block;
+  width: 100%;
+  margin: 5px 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Add this to your CSS file or a <style> block in base.html */
+.delete-class-form {
+  margin-top: 20px;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+.inline-form {
+  display: inline;
+}
+
+.warning-text {
+  color: red;
+}
+
+.form-container {
+  margin: 20px auto;
+  max-width: 600px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 15px;
+  font-size: 14px;
+  text-align: center;
+  border-radius: 5px;
+  text-decoration: none;
+  color: #fff;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  border: none;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  border: none;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+.profile-completion {
+  margin-bottom: 20px;
+}
+
+.progress-bar-container {
+  width: 100%;
+  background-color: #f3f3f3;
+  border: 1px solid #ddd;
+  height: 20px;
+  position: relative;
+}
+
+.progress-bar {
+  background-color: #4caf50;
+  height: 100%;
+}
+
+.home-container {
+  text-align: center;
+  margin-top: 50px;
+}
+
+.home-container h1 {
+  font-size: 2.5rem;
+  color: #333;
+}
+
+.home-container p {
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.class-list-container {
+  margin: 20px 0;
+}
+
+.class-list {
+  list-style: none;
+  padding: 0;
+}
+
+.class-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #ddd;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+.class-name a {
+  font-weight: bold;
+  text-decoration: none;
+  color: #333;
+}
+
+.class-actions a {
+  margin-left: 10px;
+  text-decoration: none;
+  color: #007bff;
+  font-size: 0.9rem;
+}
+
+.class-actions a.delete-link {
+  color: #dc3545;
+}
+
+.class-actions a:hover {
+  text-decoration: underline;
+}
+
+.create-class-link {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.create-class-link a {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.create-class-link a:hover {
+  background-color: #0056b3;
+}
+
+.join-requests-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+
+.join-requests-table th,
+.join-requests-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.join-requests-table th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+.join-requests-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.join-requests-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+.action-form {
+  display: inline-block;
+  margin-right: 10px;
+}
+
+.approve-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.approve-btn:hover {
+  background-color: #45a049;
+}
+
+.reject-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.reject-btn:hover {
+  background-color: #d32f2f;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 20px;
+}
+
+.nav-links li {
+  display: inline-block;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #000;
+}
+
+.nav-links a:hover {
+  text-decoration: underline;
+}
+
+.logout-form {
+  display: inline;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+  padding: 0;
+}
+
+.logout-btn:hover {
+  color: #007BFF;
+}
+
+.profile-img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-top: 10px;
+}
+
+.edit-profile-form {
+  margin-top: 20px;
+}
+
+.edit-profile-form .btn {
+  background-color: #007BFF;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.edit-profile-form .btn:hover {
+  background-color: #0056b3;
+}
+
+.search-form {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.class-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.class-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  background-color: #f9f9f9;
+}
+
+.class-link {
+  font-size: 18px;
+  text-decoration: none;
+  color: #007BFF;
+  margin-right: 20px;
+}
+
+.class-link:hover {
+  text-decoration: underline;
+}
+
+.join-form {
+  margin: 0;
+}
+
+.btn {
+  background-color: #007BFF;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn:hover {
+  background-color: #0056b3;
+}
+
+.btn-join {
+  background-color: #28a745;
+}
+
+.btn-join:hover {
+  background-color: #218838;
+}
+
+.no-classes {
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.class-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.class-item {
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  display: flex;
+  align-items: center;
+}
+
+.class-link {
+  font-size: 18px;
+  color: #007BFF;
+  text-decoration: none;
+  flex: 1;
+}
+
+.class-link:hover {
+  text-decoration: underline;
+}
+
+.no-classes {
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+  margin-top: 20px;
+}
+
 @media (max-width: 768px) {
   .burger-menu {
       display: block;

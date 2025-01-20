@@ -11,4 +11,23 @@
         {{ search_form.as_p }}
         <button type="submit">Add Student</button>
     </form>
+
+    {% if messages %}
+        <ul>
+            {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if class.students.exists %}
+        <h3>Currently Enrolled Students</h3>
+        <ul>
+            {% for student in class.students.all %}
+                <li>{{ student.username }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No students are currently enrolled in this class.</p>
+    {% endif %}
 {% endblock %}

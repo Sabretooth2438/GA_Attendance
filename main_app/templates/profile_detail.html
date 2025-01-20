@@ -4,30 +4,35 @@
 
 {% block content %}
 <h2>{{ profile.user.username }}'s Profile</h2>
-<p>Email: {{ profile.email }}</p>
+<p>Email: {{ profile.user.email }}</p>
 <p>Role: {{ profile.role }}</p>
 
-{% if request.user.profile.role == 'Teacher' %}
-    <a href="{% url 'edit_attendance' class_pk=class_instance.pk student_pk=profile.pk %}">
+{% if request.user.profile.role == 'Teacher' and class_instance %}
+    <a href="{% url 'edit_attendance' class_pk=class_instance.pk student_pk=profile.user.pk %}">
         Edit Attendance
     </a>
 {% endif %}
 
-
 {% if attendance_records %}
-    <p>Absence Percentage for {{ attendance_records.first.classid.name }}: {{ absence_percentage }}%</p>
+    <h3>Attendance Overview</h3>
+    <p>Total Classes: {{ total_classes }}</p>
+    <p>Total Absences: {{ total_absences }}</p>
+    <p>Absence Percentage: {{ absence_percentage }}%</p>
+
     <h3>Attendance Records</h3>
     <table>
+        <caption>Attendance records for {{ profile.user.username }}</caption>
         <thead>
             <tr>
                 <th>Date</th>
                 <th>Status</th>
+                <th>Reason</th>
             </tr>
         </thead>
         <tbody>
             {% for record in attendance_records %}
                 <tr>
-                    <td>{{ record.date }}</td>
+                    <td>{{ record.date|date:"F j, Y" }}</td>
                     <td>
                         {% if record.status == 'P' %} Present
                         {% elif record.status == 'A' %} Absent
@@ -35,27 +40,13 @@
                         {% elif record.status == 'E' %} Excused
                         {% endif %}
                     </td>
+                    <td>{{ record.reason|default:"N/A" }}</td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
 {% else %}
-    <h3>Classes</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Class</th>
-                <th>Attendance Percentage</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for class_, percentage in attendance_summary.items %}
-                <tr>
-                    <td>{{ class_.name }}</td>
-                    <td>{{ percentage }}%</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <p>No attendance records available for this user.</p>
 {% endif %}
+
 {% endblock %}

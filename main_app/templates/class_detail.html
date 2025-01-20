@@ -3,18 +3,28 @@
 
 <h2>{{ class.name }}</h2>
 <p>{{ class.description }}</p>
-<p>Teacher: {{ class.teacher.user.username }}</p>
+<p>Teacher: {{ class.teacher.username }}</p>
 <p>Today's Date: <span class="current-date">{{ date }}</span></p>
 
-{% if user.profile == class.teacher %}
+{% if user == class.teacher %}
+    <!-- Teacher-only section -->
     <a href="{% url 'manage_join_requests' pk=class.pk %}">Manage Join Requests</a>
 
     <h3>Mark Attendance</h3>
+    {% if formset.non_form_errors %}
+        <div class="error-messages">
+            <ul>
+                {% for error in formset.non_form_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
     <form method="post">
         {% csrf_token %}
         {{ formset.management_form }}
-    
         <table>
+            <caption>Attendance management for {{ class.name }}</caption>
             <thead>
                 <tr>
                     <th>Student</th>
@@ -27,62 +37,54 @@
                 {% for form, student in zipped_data %}
                     <tr>
                         <td>
-                        {{ student.user.username }}
-                        {{ form.student.as_hidden }}
+                            <a href="{% url 'profile_detail' student.id %}">
+                                {{ student.username }}
+                            </a>
+                            {{ form.student.as_hidden }}
                         </td>
-                        <td>{{ form.status }}</td>  <!-- <select> with choices -->
-                        <td>{{ form.reason }}</td>  <!-- <textarea> -->
                         <td>
-                        <form method="post" action="{% url 'remove_student' class.pk student.pk %}" style="display:inline;">
-                            {% csrf_token %}
-                            <button type="submit">Remove</button>
-                        </form>
+                            {{ form.status|safe }}
+                        </td>
+                        <td>
+                            {{ form.reason|default:"N/A" }}
+                        </td>
+                        <td>
+                            <form method="post" action="{% url 'remove_student' class.pk student.pk %}" class="inline-form">
+                                {% csrf_token %}
+                                <button type="submit">Remove</button>
+                            </form>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-    
         <button type="submit">Submit Attendance</button>
     </form>
-    
-
 {% else %}
+    <!-- Student or non-teacher view -->
     <p>Students:</p>
     <ul>
-    {% if students %}
-        {% for student in students %}
-            <li>{{ student.user.username }}</li>
-        {% endfor %}
-    {% else %}
-        <li>No students are currently enrolled.</li>
-    {% endif %}
+        {% if students %}
+            {% for student in students %}
+                <li>{{ student.username }}</li>
+            {% endfor %}
+        {% else %}
+            <li>No students are currently enrolled.</li>
+        {% endif %}
     </ul>
 {% endif %}
 
-{% endblock %}
-
-{% block extra_scripts %}
-{% comment %} <script>
-    // Toggle "Reason" visibility if status == "Excused"
-    document.querySelectorAll('select[name^="form-"][name$="-status"]').forEach(select => {
-        select.addEventListener('change', function() {
-            const formIndex = this.name.split('-')[1];
-            const reasonName = `form-${formIndex}-reason`;
-            const reasonField = document.querySelector(`textarea[name="${reasonName}"]`);
-            if (!reasonField) return;
-    
-            if (this.value === 'E') {
-                reasonField.style.display = 'block';
-                reasonField.required = true;
-            } else {
-                reasonField.style.display = 'none';
-                reasonField.required = false;
-                reasonField.value = '';
-            }
-        });
-        // Trigger change on page load to set initial visibility
-        select.dispatchEvent(new Event('change'));
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropdowns = document.querySelectorAll('select');
+        if (dropdowns.length === 0) {
+            console.warn("No dropdowns found on this page.");
+        } else {
+            dropdowns.forEach(dropdown => {
+                dropdown.classList.add('browser-default');
+            });
+        }
     });
-  </script>   {% endcomment %}
+</script>
+
 {% endblock %}
