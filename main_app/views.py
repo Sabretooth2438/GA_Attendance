@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
-from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.models import User
@@ -8,20 +7,16 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.forms import modelformset_factory
-import logging
-
+from datetime import timedelta, date
 from .models import Profile, Class, Attendance, JoinRequest
 from .forms import (
     UserRegistrationForm, ProfileForm, ClassForm,
-    StudentSearchForm, AttendanceForm, EditClassForm
-)
+    StudentSearchForm, AttendanceForm)
+import logging
 
 logger = logging.getLogger(__name__)
 
-#################
-#   AUTH VIEWS  #
-#################
-
+# Handles user sign-up and auto-login
 def signup(request):
     if request.method == 'POST':
         user_form = UserRegistrationForm(request.POST)
@@ -31,34 +26,29 @@ def signup(request):
             user.set_password(user_form.cleaned_data['password'])
             user.save()
             login(request, user)
-            # Profile auto-created by signal if not existing
             return redirect('edit_profile')
     else:
         user_form = UserRegistrationForm()
     return render(request, 'registration/signup.html', {'user_form': user_form})
 
-
+# Custom login view to redirect users after login
 class CustomLoginView(LoginView):
     template_name = 'registration/login.html'
     def get_success_url(self):
         return reverse_lazy('home')
 
-
+# Custom logout view to redirect users to home
 class CustomLogoutView(LogoutView):
     next_page = reverse_lazy('home')
 
-########################
-#   PROFILE / HOME     #
-########################
-
+# Displays the profile of the logged-in user
 @login_required
 def profile(request):
-    # Just show the logged-in user's data
     return render(request, 'profile.html', {'user': request.user})
 
+# Allows the user to edit their profile details
 @login_required
 def edit_profile(request):
-    # Access Profile via request.user.profile
     profile = get_object_or_404(Profile, user=request.user)
     if request.method == 'POST':
         form = ProfileForm(request.POST, request.FILES, instance=profile)
@@ -69,22 +59,19 @@ def edit_profile(request):
     else:
         form = ProfileForm(instance=profile)
 
-    completion_percentage = profile.completion_percentage()  # If you have that method
+    completion_percentage = profile.completion_percentage()
     return render(request, 'edit_profile.html', {
         'form': form,
         'completion_percentage': completion_percentage
     })
 
+# Renders the home page
 def home(request):
     return render(request, 'home.html')
 
-#####################
-#   CLASS VIEWS     #
-#####################
-
+# Allows a teacher to create a new class
 @login_required
 def create_class(request):
-    # Ensure they're a teacher
     if request.user.profile.role != 'Teacher':
         return redirect('home')
 
@@ -92,14 +79,14 @@ def create_class(request):
         form = ClassForm(request.POST)
         if form.is_valid():
             class_instance = form.save(commit=False)
-            class_instance.teacher = request.user  # store the User as the teacher
+            class_instance.teacher = request.user
             class_instance.save()
             return redirect('class_detail', pk=class_instance.pk)
     else:
         form = ClassForm()
     return render(request, 'create_class.html', {'form': form})
 
-
+# Displays details of a specific class
 @login_required
 def class_detail(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
@@ -107,11 +94,10 @@ def class_detail(request, pk):
     today = timezone.now().date()
 
     if request.user.profile.role == 'Teacher' and request.user == class_instance.teacher:
-        # Define a formset for Attendance
         AttendanceFormSet = modelformset_factory(
             Attendance,
             fields=['student', 'status', 'reason'],
-            extra=0  # No extra empty forms
+            extra=0
         )
 
         if request.method == 'POST':
@@ -125,10 +111,8 @@ def class_detail(request, pk):
                 messages.success(request, "Attendance marked for all students!")
                 return redirect('class_detail', pk=pk)
         else:
-            # Pre-fill the formset with today's attendance records or create new ones
             attendance_qs = Attendance.objects.filter(classid=class_instance, date=today)
             if not attendance_qs.exists():
-                # Create initial attendance objects for the formset
                 initial_data = [{'student': student.pk} for student in students]
                 formset = AttendanceFormSet(queryset=Attendance.objects.none(), initial=initial_data)
             else:
@@ -150,21 +134,18 @@ def class_detail(request, pk):
         'date': today
     })
 
+# Lists all classes managed by the teacher
 @login_required
 def manage_classes(request):
-    # Only teachers can see "manage classes"
     if request.user.profile.role != 'Teacher':
         return redirect('home')
-    # Show all classes this teacher owns
     classes = Class.objects.filter(teacher=request.user)
     return render(request, 'manage_classes.html', {'classes': classes})
 
-
+# Allows a teacher to edit class details
 @login_required
 def edit_class(request, class_id):
     class_instance = get_object_or_404(Class, pk=class_id)
-
-    # Confirm user is that class's teacher
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
         return redirect('home')
 
@@ -178,7 +159,7 @@ def edit_class(request, class_id):
         form = ClassForm(instance=class_instance)
     return render(request, 'edit_class.html', {'form': form, 'class': class_instance})
 
-
+# Allows a teacher to delete a class
 @login_required
 def delete_class(request, class_id):
     class_instance = get_object_or_404(Class, pk=class_id)
@@ -192,16 +173,10 @@ def delete_class(request, class_id):
 
     return render(request, 'delete_class.html', {'class': class_instance})
 
-###############################
-#   ADD / REMOVE STUDENTS     #
-###############################
-
+# Allows a teacher to add a student to their class
 @login_required
 def add_student(request, pk):
-    """Teacher can enroll a student into their class by username."""
     class_instance = get_object_or_404(Class, pk=pk)
-
-    # Check teacher
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
         return redirect('home')
 
@@ -210,10 +185,8 @@ def add_student(request, pk):
         if search_form.is_valid():
             username = search_form.cleaned_data['username']
             try:
-                # We want a User whose profile.role == 'Student'
                 student_user = User.objects.get(username=username)
                 if student_user.profile.role == 'Student':
-                    # Enroll them
                     class_instance.students.add(student_user)
                     messages.success(request, f"Added {username} to the class.")
                     return redirect('class_detail', pk=pk)
@@ -229,46 +202,37 @@ def add_student(request, pk):
         'search_form': search_form
     })
 
-
+# Allows a teacher to remove a student from their class
 @login_required
 def remove_student(request, class_pk, student_pk):
     class_instance = get_object_or_404(Class, pk=class_pk)
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
         return redirect('home')
 
-    # We assume student_pk is actually the ID of the *User*
     student_user = get_object_or_404(User, pk=student_pk)
     class_instance.students.remove(student_user)
     messages.info(request, f"Removed {student_user.username} from {class_instance.name}.")
     return redirect('class_detail', pk=class_pk)
 
-#################################
-#   JOIN / LEAVE CLASS (STUDENT) #
-#################################
-
+# Lists all classes a student is enrolled in
 @login_required
 def view_classes(request):
-    """Show all classes the current user is enrolled in."""
-    # Because 'students' is M2M to User
     enrolled = request.user.enrolled_classes.all()
     return render(request, 'view_classes.html', {'classes': enrolled})
 
-
+# Allows a student to leave a class
 @login_required
 def leave_class(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
-    # Only a student can leave
     if request.user.profile.role != 'Student':
         return redirect('home')
-    # Remove this user from class
     class_instance.students.remove(request.user)
     messages.info(request, f"You left {class_instance.name}.")
     return redirect('view_classes')
 
-
+# Allows a student to request to join a class
 @login_required
 def send_join_request(request, pk):
-    """Student requests to join a class, leading to teacher approval."""
     class_instance = get_object_or_404(Class, pk=pk)
     if request.user.profile.role != 'Student':
         return redirect('home')
@@ -281,9 +245,9 @@ def send_join_request(request, pk):
         messages.info(request, "You already have a pending or decided request.")
     return redirect('class_detail', pk=pk)
 
+# Allows a teacher to manage join requests
 @login_required
 def manage_join_requests(request, pk):
-    """Teacher can see pending join requests and approve or reject them."""
     class_instance = get_object_or_404(Class, pk=pk)
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
         return redirect('home')
@@ -296,7 +260,6 @@ def manage_join_requests(request, pk):
         if action == 'approve':
             jr.status = 'Approved'
             jr.save()
-            # Add the user to the class
             class_instance.students.add(jr.student)
             messages.success(request, f"Approved {jr.student.username}.")
         elif action == 'reject':
@@ -308,13 +271,9 @@ def manage_join_requests(request, pk):
         'join_requests': join_requests
     })
 
-######################
-#   ATTENDANCE       #
-######################
-
+# Allows a teacher to mark attendance for a single student
 @login_required
 def mark_attendance_inline(request, class_pk, student_pk):
-    """One-off attendance marking for a single student (teacher only)."""
     class_instance = get_object_or_404(Class, pk=class_pk)
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
         return redirect('home')
@@ -339,18 +298,15 @@ def mark_attendance_inline(request, class_pk, student_pk):
         'student_user': student_user
     })
 
-
+# Lists attendance records for a teacher or admin
 @login_required
 def attendance_records(request):
-    """Teacher or admin might see all attendance records?"""
-    # Or filter by class, etc.
     records = Attendance.objects.all().order_by('-date')
     return render(request, 'attendance_records.html', {'records': records})
 
-
+# Allows a student to view their own attendance records
 @login_required
 def student_attendance_records(request):
-    """A student sees his/her own attendance."""
     if request.user.profile.role != 'Student':
         return redirect('home')
     records = Attendance.objects.filter(student=request.user).order_by('-date')
@@ -364,52 +320,57 @@ def student_attendance_records(request):
         'warning': warning
     })
 
+# Generates a range of dates between start_date and end_date
+def generate_date_range(start_date, end_date):
+    return [start_date + timedelta(days=x) for x in range((end_date - start_date).days + 1)]
 
+# Allows a teacher to edit attendance records for a student
 @login_required
 def edit_attendance(request, class_pk, student_pk):
     class_instance = get_object_or_404(Class, pk=class_pk)
-
-    # Ensure the current user is the teacher of the class
-    if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
-        return redirect('home')
-
-    # Fetch the student user and their attendance records for this class
-    student_user = get_object_or_404(User, pk=student_pk)
-    attendance_qs = Attendance.objects.filter(student=student_user, classid=class_instance).order_by('date')
-
-    # Create a modelformset for attendance editing
-    AttendanceFormSet = modelformset_factory(
-        Attendance,
-        fields=['date', 'status', 'reason'],
-        extra=0
-    )
+    student = get_object_or_404(User, pk=student_pk)
 
     if request.method == 'POST':
-        formset = AttendanceFormSet(request.POST, queryset=attendance_qs)
-        if formset.is_valid():
-            formset.save()
-            messages.success(request, f"Attendance for {student_user.username} updated.")
-            return redirect('profile_detail', pk=student_user.profile.pk)
-    else:
-        formset = AttendanceFormSet(queryset=attendance_qs)
+        selected_date = request.POST.get('selected_date')
+        status = request.POST.get('status')
+        reason = request.POST.get('reason', '')
 
-    return render(request, 'edit_attendance.html', {
+        if selected_date and status:
+            try:
+                Attendance.objects.update_or_create(
+                    classid=class_instance,
+                    student=student,
+                    date=selected_date,
+                    defaults={'status': status, 'reason': reason}
+                )
+            except Exception as e:
+                print(f"Error saving attendance: {e}")
+        return redirect('class_detail', pk=class_pk)
+
+    today = date.today()
+    start_date = class_instance.start_date
+    end_date = min(class_instance.end_date, today)
+    all_dates = generate_date_range(start_date, end_date)
+
+    attendance_qs = Attendance.objects.filter(classid=class_instance, student=student).order_by('date')
+    marked_dates = {record.date for record in attendance_qs}
+    unmarked_dates = [d for d in all_dates if d not in marked_dates]
+
+    context = {
         'class_instance': class_instance,
-        'student_user': student_user,
-        'formset': formset,
-    })
+        'student_profile': student.profile,
+        'unmarked_dates': unmarked_dates,
+    }
+    return render(request, 'edit_attendance.html', context)
 
+# Displays detailed profile information for a user
 @login_required
 def profile_detail(request, user_id):
     user_profile = get_object_or_404(Profile, user_id=user_id)
-    
     attendance_records = Attendance.objects.filter(student=user_profile.user).order_by('-date')
-    
     total_classes = attendance_records.count()
     total_absences = attendance_records.filter(status='A').count()
-    
     absence_percentage = (total_absences / total_classes * 100) if total_classes > 0 else 0
-
     class_instance = user_profile.user.enrolled_classes.first() if hasattr(user_profile.user, 'enrolled_classes') else None
 
     return render(request, 'profile_detail.html', {
@@ -421,17 +382,12 @@ def profile_detail(request, user_id):
         'class_instance': class_instance,
     })
 
-
-
+# Searches for classes by keyword or shows all classes
 @login_required
 def search_classes(request):
-    if request.method == 'POST':
-        query = request.POST.get('query', '')
-        # Filter classes by name
-        found_classes = Class.objects.filter(name__icontains=query)
-        return render(request, 'search_classes.html', {
-            'classes': found_classes,
-            'query': query
-        })
-    # If GET request or no query yet
-    return render(request, 'search_classes.html')
+    query = request.POST.get('query', '') if request.method == 'POST' else ''
+    found_classes = Class.objects.filter(name__icontains=query) if query else Class.objects.all()
+    return render(request, 'search_classes.html', {
+        'classes': found_classes,
+        'query': query
+    })

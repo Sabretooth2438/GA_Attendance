@@ -4,31 +4,55 @@
 
 {% block content %}
 <h2>Edit Attendance for {{ student_profile.user.username }} in {{ class_instance.name }}</h2>
+
 <form method="post">
     {% csrf_token %}
-    {{ formset.management_form }}
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Reason (Optional)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for form in formset %}
+    <label for="date-picker">Select Date:</label>
+    <input type="date" id="date-picker" name="selected_date" min="{{ class_instance.start_date }}" max="{{ class_instance.end_date }}">
+    
+    <div id="attendance-details" style="display: none;">
+        <table>
+            <thead>
                 <tr>
-                    <td>{{ form.date }}</td>
-                    <td>{{ form.status }}</td>
-                    <td>{{ form.reason }}</td>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Reason (Optional)</th>
                 </tr>
-            {% empty %}
+            </thead>
+            <tbody>
                 <tr>
-                    <td colspan="3">No attendance records available to edit.</td>
+                    <td id="selected-date-display"></td>
+                    <td>
+                        <select name="status">
+                            <option value="P">Present</option>
+                            <option value="A">Absent</option>
+                            <option value="L">Late</option>
+                            <option value="E">Excused</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" name="reason" placeholder="Optional reason">
+                    </td>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <button type="submit">Save Changes</button>
+            </tbody>
+        </table>
+        <button type="submit">Save Changes</button>
+    </div>
 </form>
+
+<script>
+    const datePicker = document.getElementById('date-picker');
+    const attendanceDetails = document.getElementById('attendance-details');
+    const dateDisplay = document.getElementById('selected-date-display');
+
+    datePicker.addEventListener('change', () => {
+        const selectedDate = datePicker.value;
+        if (selectedDate) {
+            attendanceDetails.style.display = 'block';
+            dateDisplay.textContent = selectedDate;
+        } else {
+            attendanceDetails.style.display = 'none';
+        }
+    });
+</script>
 {% endblock %}

@@ -9,6 +9,7 @@
 {% if user == class.teacher %}
     <!-- Teacher-only section -->
     <a href="{% url 'manage_join_requests' pk=class.pk %}">Manage Join Requests</a>
+    <a href="{% url 'add_student' pk=class.pk %}" class="btn btn-primary">Add Student</a>
 
     <h3>Mark Attendance</h3>
     {% if formset.non_form_errors %}
@@ -24,7 +25,6 @@
         {% csrf_token %}
         {{ formset.management_form }}
         <table>
-            <caption>Attendance management for {{ class.name }}</caption>
             <thead>
                 <tr>
                     <th>Student</th>
@@ -62,16 +62,27 @@
     </form>
 {% else %}
     <!-- Student or non-teacher view -->
-    <p>Students:</p>
-    <ul>
-        {% if students %}
-            {% for student in students %}
-                <li>{{ student.username }}</li>
-            {% endfor %}
-        {% else %}
-            <li>No students are currently enrolled.</li>
-        {% endif %}
-    </ul>
+    <h3>Enrolled Students</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Student Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if students %}
+                {% for student in students %}
+                    <tr>
+                        <td>{{ student.username }}</td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td>No students are currently enrolled.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
 {% endif %}
 
 <script>

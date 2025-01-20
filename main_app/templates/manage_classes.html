@@ -6,26 +6,34 @@
 
 {% block content %}
     <h2>Manage Classes</h2>
+    <div class="create-class-link">
+        <a href="{% url 'create_class' %}">Create New Class</a>
+    </div>
     <div class="class-list-container">
         {% if classes %}
-            <ul class="class-list">
-                {% for class in classes %}
-                <li class="class-item">
-                    <span class="class-name">
-                        <a href="{% url 'class_detail' pk=class.pk %}">{{ class.name }}</a>
-                    </span>
-                    <div class="class-actions">
-                        <a href="{% url 'edit_class' class_id=class.pk %}" class="edit-link">Edit</a>
-                        <a href="{% url 'delete_class' class_id=class.pk %}" class="delete-link">Delete</a>
-                    </div>
-                </li>
-                {% endfor %}
-            </ul>
+            <table class="class-table">
+                <thead>
+                    <tr>
+                        <th>Class Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class in classes %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'class_detail' pk=class.pk %}">{{ class.name }}</a>
+                        </td>
+                        <td>
+                            <a href="{% url 'edit_class' class_id=class.pk %}" class="edit-link">Edit</a>
+                            <a href="{% url 'delete_class' class_id=class.pk %}" class="delete-link">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         {% else %}
             <p>No classes available. <a href="{% url 'create_class' %}">Create a new class</a>.</p>
         {% endif %}
-    </div>
-    <div class="create-class-link">
-        <a href="{% url 'create_class' %}">Create New Class</a>
     </div>
 {% endblock %}

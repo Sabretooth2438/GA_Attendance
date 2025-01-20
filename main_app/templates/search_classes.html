@@ -12,8 +12,8 @@
         <button type="submit" class="btn">Search</button>
     </form>
 
-    {% if classes %}
-        <ul class="class-list">
+    <ul class="class-list">
+        {% if classes %}
             {% for class in classes %}
                 <li class="class-item">
                     <a href="{% url 'class_detail' pk=class.pk %}" class="class-link">{{ class.name }}</a>
@@ -23,8 +23,8 @@
                     </form>
                 </li>
             {% endfor %}
-        </ul>
-    {% else %}
-        <p class="no-classes">No classes available.</p>
-    {% endif %}
+        {% else %}
+            <p class="no-classes">No classes available.</p>
+        {% endif %}
+    </ul>
 {% endblock %}

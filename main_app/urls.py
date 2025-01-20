@@ -2,20 +2,20 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # Home page.
+    # Home page route
     path('', views.home, name='home'),
-    
-    # User authentication routes.
+
+    # User authentication routes
     path('signup/', views.signup, name='signup'),
     path('login/', views.CustomLoginView.as_view(), name='login'),
     path('logout/', views.CustomLogoutView.as_view(), name='logout'),
-    
-    # User profile routes.
+
+    # User profile routes
     path('profile/', views.profile, name='profile'),
     path('profile/<int:user_id>/', views.profile_detail, name='profile_detail'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),
-    
-    # Class management routes.
+
+    # Class management routes
     path('class/create/', views.create_class, name='create_class'),
     path('class/<int:pk>/', views.class_detail, name='class_detail'),
     path('classes/manage/', views.manage_classes, name='manage_classes'),
@@ -30,11 +30,9 @@ urlpatterns = [
     path('class/<int:class_pk>/student/<int:pk>/', views.profile_detail, name='student_profile'),
     path('class/<int:class_pk>/edit_attendance/<int:student_pk>/', views.edit_attendance, name='edit_attendance'),
 
-    
-    # Attendance management routes.
+    # Attendance management routes
     path('class/<int:class_pk>/mark_attendance/<int:student_pk>/', views.mark_attendance_inline, name='mark_attendance_inline'),
     path('class/<int:class_id>/attendance_records/', views.attendance_records, name='attendance_records'),
     path('class/<int:class_id>/edit/', views.edit_class, name='edit_class'),
     path('attendance/', views.student_attendance_records, name='student_attendance_records'),
-
 ]

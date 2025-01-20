@@ -4,7 +4,10 @@
 
 {% block content %}
 <h2>Manage Join Requests for {{ class.name }}</h2>
-<p>Teacher: {{ class.teacher.user.username }}</p>
+<div class="back-to-class">
+    <a href="{% url 'class_detail' pk=class.pk %}" class="btn btn-primary">Back to Current Class</a>
+</div>
+<p>Teacher: {{ class.teacher.username }}</p>
 
 {% if join_requests %}
     <table class="join-requests-table">

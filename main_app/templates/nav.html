@@ -1,33 +1,24 @@
 <nav>
     <ul class="nav-links">
-        <li>
-            <a href="{% url 'home' %}">Home</a>
-        </li>
+        <!-- Common Links -->
+        <li><a href="{% url 'home' %}">Home</a></li>
+
         {% if user.is_authenticated %}
+            <!-- Teacher-Specific Links -->
             {% if user.profile and user.profile.role == 'Teacher' %}
-                <li>
-                    <a href="{% url 'create_class' %}">Create Class</a>
-                </li>
-                <li>
-                    <a href="{% url 'manage_classes' %}">Manage Classes</a>
-                </li>
-            {% elif user.profile and user.profile.role == 'Student' %}
-                <li>
-                    <a href="{% url 'view_classes' %}">My Classes</a>
-                </li>
-                <li>
-                    <a href="{% url 'search_classes' %}">Search Classes</a>
-                </li>
+                <li><a href="{% url 'create_class' %}">Create Class</a></li>
+                <li><a href="{% url 'manage_classes' %}">Manage Classes</a></li>
             {% endif %}
-            {% if user.profile and user.profile.pk %}
-                <li>
-                    <a href="{% url 'profile' %}">Profile</a>
-                </li>
-            {% else %}
-                <li>
-                    <a href="{% url 'edit_profile' %}">Complete Your Profile</a>
-                </li>
+
+            <!-- Student-Specific Links -->
+            {% if user.profile and user.profile.role == 'Student' %}
+                <li><a href="{% url 'view_classes' %}">My Classes</a></li>
+                <li><a href="{% url 'search_classes' %}">Search Classes</a></li>
+                <li><a href="{% url 'student_attendance_records' %}">Attendance Records</a></li>
             {% endif %}
+
+            <!-- Profile and Logout Links -->
+            <li><a href="{% url 'profile' %}">Profile</a></li>
             <li>
                 <form method="post" action="{% url 'logout' %}" class="logout-form">
                     {% csrf_token %}
@@ -35,12 +26,9 @@
                 </form>
             </li>
         {% else %}
-            <li>
-                <a href="{% url 'signup' %}">Sign Up</a>
-            </li>
-            <li>
-                <a href="{% url 'login' %}">Login</a>
-            </li>
+            <!-- Guest Links -->
+            <li><a href="{% url 'signup' %}">Sign Up</a></li>
+            <li><a href="{% url 'login' %}">Login</a></li>
         {% endif %}
     </ul>
-</nav>  
+</nav>
