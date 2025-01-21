@@ -93,7 +93,6 @@ def class_detail(request, pk):
     students = class_instance.students.all()
     today = timezone.now().date()
 
-    # Redirect students who are no longer part of the class
     if request.user.profile.role == 'Student' and not students.filter(pk=request.user.pk).exists():
         messages.warning(request, "You are no longer enrolled in this class.")
         return redirect('home')
@@ -118,12 +117,10 @@ def class_detail(request, pk):
             attendance_qs = Attendance.objects.filter(classid=class_instance, date=today)
             forms = []
             if not attendance_qs.exists():
-                # Create forms for students with initial data
                 for i, student in enumerate(students):
                     form = AttendanceForm(initial={'student': student.pk}, prefix=f'form-{i}')
                     forms.append(form)
             else:
-                # Prepopulate forms with existing attendance data
                 attendance_dict = {att.student_id: att for att in attendance_qs}
                 for i, student in enumerate(students):
                     form = AttendanceForm(
@@ -136,13 +133,11 @@ def class_detail(request, pk):
                     )
                     forms.append(form)
 
-        # Management form fields
         management_form = {
             'TOTAL_FORMS': len(students),
-            'INITIAL_FORMS': 0,  # We are not using preloaded data for now
+            'INITIAL_FORMS': 0,
         }
 
-        # Pair forms with students
         zipped_data = zip(forms, students)
 
         return render(request, 'class_detail.html', {
@@ -250,20 +245,16 @@ def remove_student(request, class_pk, student_pk):
 
     student_user = get_object_or_404(User, pk=student_pk)
 
-    # Edge case: Check if the student is part of the class
     if not class_instance.students.filter(pk=student_pk).exists():
         messages.warning(request, f"{student_user.username} is not enrolled in {class_instance.name}.")
         return redirect('class_detail', pk=class_pk)
 
-    # Edge case: Prevent teacher from removing themselves
     if student_user == request.user:
         messages.warning(request, "You cannot remove yourself from the class.")
         return redirect('class_detail', pk=class_pk)
 
-    # Remove the student from the class
     class_instance.students.remove(student_user)
 
-    # Remove any pending join requests for the class
     JoinRequest.objects.filter(student=student_user, classid=class_instance).delete()
 
     messages.info(request, f"Removed {student_user.username} from {class_instance.name}.")
