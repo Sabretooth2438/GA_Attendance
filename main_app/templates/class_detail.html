@@ -1,45 +1,111 @@
-<!-- main_app/templates/class_detail.html -->
 {% extends "base.html" %}
-
-{% block title %}Class Detail | GA Attendance{% endblock %}
-
 {% block content %}
+
 <h2>{{ class.name }}</h2>
 <p>{{ class.description }}</p>
-<p>Teacher: {{ class.teacher.user.username }}</p>
-<p>Today's Date: {{ current_date }}</p>
-<p>Students:</p>
-<ul>
-    {% for student in class.students.all %}
-        <li>
-            {{ student.user.username }}
-            {% if user.profile == class.teacher %}
-                <form method="post" action="{% url 'mark_attendance_inline' class_pk=class.pk student_pk=student.pk %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="student" value="{{ student.pk }}">
-                    <input type="hidden" name="classid" value="{{ class.pk }}">
-                    <select name="status" required>
-                        <option value="P">Present</option>
-                        <option value="A">Absent</option>
-                        <option value="L">Late</option>
-                    </select>
-                    <button type="submit">Mark Attendance</button>
-                </form>
-            {% endif %}
-            {% if user.profile == class.teacher %}
-                <form method="post" action="{% url 'remove_student' class_pk=class.pk student_pk=student.pk %}">
-                    {% csrf_token %}
-                    <button type="submit">Remove</button>
-                </form>
-            {% endif %}
-        </li>
-    {% endfor %}
-</ul>
+<p>Teacher: {{ class.teacher.username }}</p>
+<p>Today's Date: <span class="current-date">{{ date }}</span></p>
 
-{% if user.profile.role == 'Student' and user.profile in class.students.all %}
-    <form method="post" action="{% url 'leave_class' pk=class.pk %}">
+{% if user == class.teacher %}
+    <!-- Teacher-only section -->
+    <a href="{% url 'manage_join_requests' pk=class.pk %}">Manage Join Requests</a>
+    <a href="{% url 'add_student' pk=class.pk %}" class="btn btn-primary">Add Student</a>
+
+    <h3>Mark Attendance</h3>
+    {% if formset.non_form_errors %}
+        <div class="error-messages">
+            <ul>
+                {% for error in formset.non_form_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    <form method="post">
         {% csrf_token %}
-        <button type="submit">Leave Class</button>
+        <!-- Management Form -->
+        <input type="hidden" name="TOTAL_FORMS" value="{{ management_form.TOTAL_FORMS }}">
+        <input type="hidden" name="INITIAL_FORMS" value="{{ management_form.INITIAL_FORMS }}">
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th>Remove</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if zipped_data %}
+                    {% for form, student in zipped_data %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'profile_detail' student.id %}">
+                                    {{ student.username }}
+                                </a>
+                                {{ form.student.as_hidden }}
+                            </td>
+                            <td>
+                                {{ form.status }}
+                            </td>
+                            <td>
+                                {{ form.reason }}
+                            </td>
+                            <td>
+                                <!-- Remove Button without Popup -->
+                                <form method="post" action="{% url 'remove_student' class.pk student.pk %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4">No data available in zipped_data</td>
+                    </tr>
+                {% endif %}
+            </tbody>            
+        </table>
+        <button type="submit">Submit Attendance</button>
     </form>
+{% else %}
+    <!-- Student or non-teacher view -->
+    <h3>Enrolled Students</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Student Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if students %}
+                {% for student in students %}
+                    <tr>
+                        <td>{{ student.username }}</td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td>No students are currently enrolled.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
 {% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropdowns = document.querySelectorAll('select');
+        if (dropdowns.length === 0) {
+            console.warn("No dropdowns found on this page.");
+        } else {
+            dropdowns.forEach(dropdown => {
+                dropdown.classList.add('browser-default');
+            });
+        }
+    });
+</script>
+
 {% endblock %}

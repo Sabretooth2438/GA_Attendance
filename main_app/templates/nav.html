@@ -1,0 +1,34 @@
+<nav>
+    <ul class="nav-links">
+        <!-- Common Links -->
+        <li><a href="{% url 'home' %}">Home</a></li>
+
+        {% if user.is_authenticated %}
+            <!-- Teacher-Specific Links -->
+            {% if user.profile and user.profile.role == 'Teacher' %}
+                <li><a href="{% url 'create_class' %}">Create Class</a></li>
+                <li><a href="{% url 'manage_classes' %}">Manage Classes</a></li>
+            {% endif %}
+
+            <!-- Student-Specific Links -->
+            {% if user.profile and user.profile.role == 'Student' %}
+                <li><a href="{% url 'view_classes' %}">My Classes</a></li>
+                <li><a href="{% url 'search_classes' %}">Search Classes</a></li>
+                <li><a href="{% url 'student_attendance_records' %}">Attendance Records</a></li>
+            {% endif %}
+
+            <!-- Profile and Logout Links -->
+            <li><a href="{% url 'profile' %}">Profile</a></li>
+            <li>
+                <form method="post" action="{% url 'logout' %}" class="logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            </li>
+        {% else %}
+            <!-- Guest Links -->
+            <li><a href="{% url 'signup' %}">Sign Up</a></li>
+            <li><a href="{% url 'login' %}">Login</a></li>
+        {% endif %}
+    </ul>
+</nav>

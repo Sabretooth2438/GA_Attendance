@@ -5,10 +5,52 @@
 {% endblock %}
 
 {% block content %}
-    <h2>Add Student to {{ class.name }}</h2>
+<h2>Add Student to {{ class.name }}</h2>
+
+<div class="back-to-class">
+    <a href="{% url 'class_detail' pk=class.pk %}" class="btn btn-primary">Back to Current Class</a>
+</div>
+
+<form method="post" class="search-form">
+    {% csrf_token %}
+    {{ search_form.as_p }}
+    <button type="submit" class="btn">Search</button>
+</form>
+
+{% if messages %}
+    <ul>
+        {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+{% if search_query %}
+    <h3>Search Results for "{{ search_query }}"</h3>
     <form method="post">
         {% csrf_token %}
-        {{ search_form.as_p }}
-        <button type="submit">Add Student</button>
+        <ul>
+            {% for student in search_results %}
+                <li>
+                    {{ student.username }}
+                    <button type="submit" name="username" value="{{ student.username }}" class="btn btn-join">Add</button>
+                </li>
+            {% endfor %}
+        </ul>
+        {% if not search_results %}
+            <p>No matching students found.</p>
+        {% endif %}
     </form>
+{% endif %}
+
+<h3>Currently Enrolled Students</h3>
+{% if class.students.exists %}
+    <ul>
+        {% for student in class.students.all %}
+            <li>{{ student.username }}</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No students are currently enrolled in this class.</p>
+{% endif %}
 {% endblock %}

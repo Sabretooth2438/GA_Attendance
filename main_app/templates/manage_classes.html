@@ -6,14 +6,34 @@
 
 {% block content %}
     <h2>Manage Classes</h2>
-    <ul>
-        {% for class in classes %}
-        <li>
-            <a href="{% url 'class_detail' pk=class.pk %}">{{ class.name }}</a>
-            <a href="{% url 'edit_class' class_id=class.pk %}">Edit</a>
-            <a href="{% url 'delete_class' class_id=class.pk %}">Delete</a>
-        </li>
-        {% endfor %}
-    </ul>
-    <a href="{% url 'create_class' %}">Create New Class</a>
+    <div class="create-class-link">
+        <a href="{% url 'create_class' %}">Create New Class</a>
+    </div>
+    <div class="class-list-container">
+        {% if classes %}
+            <table class="class-table">
+                <thead>
+                    <tr>
+                        <th>Class Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class in classes %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'class_detail' pk=class.pk %}">{{ class.name }}</a>
+                        </td>
+                        <td>
+                            <a href="{% url 'edit_class' class_id=class.pk %}" class="edit-link">Edit</a>
+                            <a href="{% url 'delete_class' class_id=class.pk %}" class="delete-link">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No classes available. <a href="{% url 'create_class' %}">Create a new class</a>.</p>
+        {% endif %}
+    </div>
 {% endblock %}

@@ -1,81 +1,51 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>
-        {% block title %}
-            GA Attendance
-        {% endblock %}
-        </title>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-        <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
-        <link rel="icon" href="{% static 'favicon.ico' %}" type="image/x-icon" />
-    </head>
-    <body>
-        <header>
-        <nav>
-            <ul class="nav-links">
-            <li>
-                <a href="{% url 'home' %}">Home</a>
-            </li>
-            {% if user.is_authenticated %}
-                {% if user.profile and user.profile.role == 'Teacher' %}
-                <li>
-                    <a href="{% url 'create_class' %}">Create Class</a>
-                </li>
-                <li>
-                    <a href="{% url 'manage_classes' %}">Manage Classes</a>
-                </li>
-                {% elif user.profile and user.profile.role == 'Student' %}
-                <li>
-                    <a href="{% url 'view_classes' %}">My Classes</a>
-                </li>
-                <li>
-                    <a href="{% url 'search_classes' %}">Search Classes</a>
-                </li>
-                {% endif %}
-                {% if user.profile and user.profile.pk %}
-                <li>
-                    <a href="{% url 'profile_detail' pk=user.profile.pk %}">Profile</a>
-                </li>
-                {% else %}
-                <li>
-                    <a href="{% url 'edit_profile' %}">Complete Your Profile</a>
-                </li>
-                {% endif %}
-                <li>
-                <form method="post" action="{% url 'logout' %}" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" style="background: none; border: none; color: inherit; cursor: pointer; text-decoration: underline;">Logout</button>
-                </form>
-                </li>
-            {% else %}
-                <li>
-                <a href="{% url 'signup' %}">Sign Up</a>
-                </li>
-                <li>
-                <a href="{% url 'login' %}">Login</a>
-                </li>
-            {% endif %}
-            </ul>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        {% block title %}GA Attendance{% endblock %}
+    </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+    <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any" />
+    <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" defer></script>
+</head>
+<body>
+    <header>
+        <nav role="navigation">
+            {% include 'nav.html' %}
         </nav>
-        </header>
+    </header>
 
-        <main>
-        {% block content %}
+    <main>
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message card-panel {{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
 
-        {% endblock %}
-        </main>
+        {% block content %}{% endblock %}
+    </main>
 
-        <footer>
-        <p>&copy; 2025 GA Attendance</p>
-        </footer>
+    <footer class="page-footer">
+        <div class="container">
+            <p class="center-align">&copy; 2025 GA Attendance</p>
+        </div>
+    </footer>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-        {% block extra_js %}
-
-        {% endblock %}
-    </body>
+    {% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            M.AutoInit(); // Automatically initialize all Materialize components
+        });
+    </script>
+    {% endblock %}
+</body>
 </html>

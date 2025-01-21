@@ -1,27 +1,38 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}
-    Attendance Records | GA Attendance
-{% endblock %}
+{% block title %}Attendance Records | GA Attendance{% endblock %}
 
 {% block content %}
-    <h2>Attendance Records for {{ class.name }}</h2>
-    <table>
-        <thead>
+<h2>Your Attendance Records</h2>
+<p><strong>Absence Percentage:</strong> {{ absence_percentage }}%</p>
+{% if warning %}
+    <p class="warning-text">Warning: Your absence percentage exceeds 25%!</p>
+{% endif %}
+
+<table>
+    <thead>
         <tr>
-            <th>Student</th>
             <th>Date</th>
             <th>Status</th>
         </tr>
-        </thead>
-        <tbody>
+    </thead>
+    <tbody>
         {% for record in records %}
             <tr>
-            <td>{{ record.student.user.username }}</td>
-            <td>{{ record.date }}</td>
-            <td>{{ record.get_status_display }}</td>
+                <td>{{ record.date }}</td>
+                <td>
+                    {% if record.status == 'P' %}
+                        ✅ Present
+                    {% elif record.status == 'A' %}
+                        ❌ Absent
+                    {% elif record.status == 'L' %}
+                        ⏰ Late
+                    {% elif record.status == 'E' %}
+                        ✉️ Excused
+                    {% endif %}
+                </td>
             </tr>
         {% endfor %}
-        </tbody>
-    </table>
+    </tbody>
+</table>
 {% endblock %}

@@ -6,9 +6,15 @@
 
 {% block content %}
     <h2>Edit Profile</h2>
+    <div class="profile-completion">
+        <p>Profile Completion: {{ completion_percentage }}%</p>
+        <div class="progress-bar-container">
+            <div class="progress-bar" style="width: {{ completion_percentage }}%;"></div>
+        </div>
+    </div>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">Save Changes</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
     </form>
 {% endblock %}
