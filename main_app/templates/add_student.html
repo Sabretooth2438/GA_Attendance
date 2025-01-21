@@ -5,6 +5,12 @@
 {% endblock %}
 
 {% block content %}
+
+<!-- Back to Class Button -->
+<div class="back-to-class" style="margin-bottom: 20px;">
+    <a href="{% url 'class_detail' class.pk %}" class="btn btn-back">Back to Class</a>
+</div>
+
 <h2>Add Student to {{ class.name }}</h2>
 <form method="post" class="search-form">
     {% csrf_token %}
@@ -21,20 +27,31 @@
 {% endif %}
 
 <h3>Matching Students</h3>
-<form method="post">
-    {% csrf_token %}
-    <ul>
-        {% for student in found_students %}
-            <li>
-                {{ student.username }}
-                <button type="submit" name="username" value="{{ student.username }}" class="btn btn-join">Add</button>
-            </li>
-        {% endfor %}
-    </ul>
-    {% if not found_students %}
+{% if found_students %}
+    <form method="post">
+        {% csrf_token %}
+        <ul>
+            {% for student in found_students %}
+                <li>
+                    {{ student.username }}
+                    {% if student in class.students.all %}
+                        <!-- Student is already enrolled -->
+                        <button type="button" class="btn btn-disabled" disabled>Already Enrolled</button>
+                    {% else %}
+                        <!-- Add button for students not in the class -->
+                        <button type="submit" name="username" value="{{ student.username }}" class="btn btn-join">Add</button>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    </form>
+{% else %}
+    {% if query %}
         <p>No matching students found.</p>
+    {% else %}
+        <p>Enter a query to search for students.</p>
     {% endif %}
-</form>
+{% endif %}
 
 <h3>Currently Enrolled Students</h3>
 {% if class.students.exists %}

@@ -86,12 +86,15 @@ def create_class(request):
         form = ClassForm()
     return render(request, 'create_class.html', {'form': form})
 
-# Displays details of a specific class
 @login_required
 def class_detail(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
     students = class_instance.students.all()
     today = timezone.now().date()
+
+    if request.user.profile.role == 'Student' and request.user not in students:
+        messages.error(request, "You do not have access to this class.")
+        return redirect('view_classes')
 
     if request.user.profile.role == 'Teacher' and request.user == class_instance.teacher:
         AttendanceFormSet = modelformset_factory(
@@ -114,11 +117,17 @@ def class_detail(request, pk):
             attendance_qs = Attendance.objects.filter(classid=class_instance, date=today)
             if not attendance_qs.exists():
                 initial_data = [{'student': student.pk} for student in students]
-                formset = AttendanceFormSet(queryset=Attendance.objects.none(), initial=initial_data)
+                print(f"Initial Data: {initial_data}")
+                formset = AttendanceFormSet(
+                    queryset=Attendance.objects.none(),
+                    initial=initial_data
+                )
+                formset.extra = len(initial_data)
             else:
                 formset = AttendanceFormSet(queryset=attendance_qs)
 
-        zipped_data = zip(formset.forms, students)
+        zipped_data = list(zip(formset.forms, students))
+        print(f"Zipped Data: {zipped_data}")
 
         return render(request, 'class_detail.html', {
             'class': class_instance,
@@ -173,33 +182,40 @@ def delete_class(request, class_id):
 
     return render(request, 'delete_class.html', {'class': class_instance})
 
-# Allows a teacher to add a student to their class
 @login_required
 def add_student(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
+
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
         return redirect('home')
 
-    if request.method == 'POST':
-        search_form = StudentSearchForm(request.POST)
-        if search_form.is_valid():
-            username = search_form.cleaned_data['username']
+    query = request.POST.get('query', '') if request.method == 'POST' else ''
+    found_students = User.objects.filter(
+        username__icontains=query, 
+        profile__role='Student'
+    ) if query else None
+
+    if request.method == 'POST' and 'username' in request.POST:
+        username = request.POST.get('username')
+        if username:
             try:
                 student_user = User.objects.get(username=username)
                 if student_user.profile.role == 'Student':
-                    class_instance.students.add(student_user)
-                    messages.success(request, f"Added {username} to the class.")
+                    if student_user in class_instance.students.all():
+                        messages.info(request, f"{username} is already enrolled in the class.")
+                    else:
+                        class_instance.students.add(student_user)
+                        messages.success(request, f"Added {username} to the class.")
                     return redirect('class_detail', pk=pk)
                 else:
-                    search_form.add_error('username', 'This user is not a Student.')
+                    messages.error(request, "This user is not a Student.")
             except User.DoesNotExist:
-                search_form.add_error('username', 'User not found.')
-    else:
-        search_form = StudentSearchForm()
+                messages.error(request, "User not found.")
 
     return render(request, 'add_student.html', {
         'class': class_instance,
-        'search_form': search_form
+        'found_students': found_students,
+        'query': query,
     })
 
 # Allows a teacher to remove a student from their class
@@ -217,8 +233,12 @@ def remove_student(request, class_pk, student_pk):
 # Lists all classes a student is enrolled in
 @login_required
 def view_classes(request):
-    enrolled = request.user.enrolled_classes.all()
-    return render(request, 'view_classes.html', {'classes': enrolled})
+    if request.user.profile.role == 'Student':
+        enrolled = request.user.enrolled_classes.all()
+        return render(request, 'view_classes.html', {'classes': enrolled})
+    else:
+        messages.error(request, "Unauthorized access.")
+        return redirect('home')
 
 # Allows a student to leave a class
 @login_required
@@ -235,14 +255,23 @@ def leave_class(request, pk):
 def send_join_request(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
     if request.user.profile.role != 'Student':
+        messages.error(request, "Only students can send join requests.")
         return redirect('home')
 
-    existing = JoinRequest.objects.filter(student=request.user, classid=class_instance).first()
-    if not existing:
-        JoinRequest.objects.create(student=request.user, classid=class_instance)
-        messages.success(request, "Join request sent.")
-    else:
-        messages.info(request, "You already have a pending or decided request.")
+    # Check for existing requests
+    existing_request = JoinRequest.objects.filter(student=request.user, classid=class_instance).first()
+
+    if existing_request:
+        if existing_request.status == 'Pending':
+            messages.info(request, "You already have a pending join request.")
+            return redirect('class_detail', pk=pk)
+        elif existing_request.status in ['Approved', 'Rejected']:
+            # Allow rejoin request by creating a new one
+            existing_request.delete()
+
+    # Create a new join request
+    JoinRequest.objects.create(student=request.user, classid=class_instance, status='Pending')
+    messages.success(request, "Join request sent.")
     return redirect('class_detail', pk=pk)
 
 # Allows a teacher to manage join requests
@@ -250,6 +279,7 @@ def send_join_request(request, pk):
 def manage_join_requests(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
+        messages.error(request, "Unauthorized access.")
         return redirect('home')
 
     join_requests = JoinRequest.objects.filter(classid=class_instance, status='Pending')
