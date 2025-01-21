@@ -4,9 +4,15 @@
 
 {% block content %}
 <h2>Your Attendance Records</h2>
+
+<p><strong>Total Absences (Including Late):</strong> {{ total_absent_equivalent }}</p>
 <p><strong>Absence Percentage:</strong> {{ absence_percentage }}%</p>
-{% if warning %}
-    <p class="warning-text">Warning: Your absence percentage exceeds 25%!</p>
+<p><strong>Late Percentage:</strong> {{ late_percentage }}%</p>
+
+{% if expelled %}
+    <p class="expelled-text">❌ You have been expelled due to poor attendance.</p>
+{% elif warning %}
+    <p class="warning-text">⚠️ Warning: Your absence percentage is concerning. Please improve your attendance!</p>
 {% endif %}
 
 <table>
@@ -14,6 +20,7 @@
         <tr>
             <th>Date</th>
             <th>Status</th>
+            <th>Reason</th>
         </tr>
     </thead>
     <tbody>
@@ -31,6 +38,7 @@
                         ✉️ Excused
                     {% endif %}
                 </td>
+                <td>{{ record.reason|default:"N/A" }}</td>
             </tr>
         {% endfor %}
     </tbody>

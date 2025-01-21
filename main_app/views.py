@@ -9,9 +9,7 @@ from django.utils import timezone
 from django.forms import modelformset_factory
 from datetime import timedelta, date
 from .models import Profile, Class, Attendance, JoinRequest
-from .forms import (
-    UserRegistrationForm, ProfileForm, ClassForm,
-    StudentSearchForm, AttendanceForm)
+from .forms import (UserRegistrationForm, ProfileForm, ClassForm, AttendanceForm)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -92,15 +90,30 @@ def class_detail(request, pk):
     students = class_instance.students.all()
     today = timezone.now().date()
 
-    if request.user.profile.role == 'Student' and request.user not in students:
-        messages.error(request, "You do not have access to this class.")
-        return redirect('view_classes')
+    attendance_stats = {}
+    for student in students:
+        records = Attendance.objects.filter(classid=class_instance, student=student)
+        total_classes = records.count()
+        total_absences = records.filter(status='A').count()
+        total_lates = records.filter(status='L').count()
 
-    if request.user.profile.role == 'Teacher' and request.user == class_instance.teacher:
+        absent_percentage = (total_absences / total_classes * 100) if total_classes > 0 else 0
+        late_percentage = (total_lates / total_classes * 100) if total_classes > 0 else 0
+        total_absent_equivalent = total_absences + (total_lates / 4 if total_classes > 0 else 0)
+
+        attendance_stats[student.id] = {
+            'absent_percentage': absent_percentage,
+            'late_percentage': late_percentage,
+            'total_absent_equivalent': total_absent_equivalent,
+        }
+
+    # Teacher-specific logic
+    if hasattr(request.user, 'profile') and request.user.profile.role == 'Teacher' and request.user == class_instance.teacher:
         AttendanceFormSet = modelformset_factory(
             Attendance,
             fields=['student', 'status', 'reason'],
-            extra=0
+            extra=0,
+            can_delete=False
         )
 
         if request.method == 'POST':
@@ -116,31 +129,24 @@ def class_detail(request, pk):
         else:
             attendance_qs = Attendance.objects.filter(classid=class_instance, date=today)
             if not attendance_qs.exists():
-                initial_data = [{'student': student.pk} for student in students]
-                print(f"Initial Data: {initial_data}")
-                formset = AttendanceFormSet(
-                    queryset=Attendance.objects.none(),
-                    initial=initial_data
-                )
-                formset.extra = len(initial_data)
+                initial_data = [{'student': student.pk, 'status': '', 'reason': ''} for student in students]
+                formset = AttendanceFormSet(queryset=Attendance.objects.none(), initial=initial_data)
             else:
                 formset = AttendanceFormSet(queryset=attendance_qs)
-
-        zipped_data = list(zip(formset.forms, students))
-        print(f"Zipped Data: {zipped_data}")
 
         return render(request, 'class_detail.html', {
             'class': class_instance,
             'formset': formset,
-            'zipped_data': zipped_data,
             'students': students,
-            'date': today
+            'attendance_stats': attendance_stats,
+            'date': today,
         })
 
     return render(request, 'class_detail.html', {
         'class': class_instance,
         'students': students,
-        'date': today
+        'attendance_stats': attendance_stats,
+        'date': today,
     })
 
 # Lists all classes managed by the teacher
@@ -331,8 +337,29 @@ def mark_attendance_inline(request, class_pk, student_pk):
 # Lists attendance records for a teacher or admin
 @login_required
 def attendance_records(request):
-    records = Attendance.objects.all().order_by('-date')
-    return render(request, 'attendance_records.html', {'records': records})
+    if request.user.profile.role not in ['Teacher', 'Admin']:
+        return redirect('home')
+
+    class_id = request.GET.get('class_id')
+    student_id = request.GET.get('student_id')
+
+    if class_id:
+        records = Attendance.objects.filter(classid_id=class_id).order_by('-date')
+    elif student_id:
+        records = Attendance.objects.filter(student_id=student_id).order_by('-date')
+    else:
+        records = Attendance.objects.all().order_by('-date')
+
+    students = User.objects.filter(profile__role='Student')
+    stats = {
+        student.id: calculate_attendance_stats(student, class_instance=None)
+        for student in students
+    }
+
+    return render(request, 'attendance_records.html', {
+        'records': records,
+        'stats': stats,
+    })
 
 # Allows a student to view their own attendance records
 @login_required
@@ -341,14 +368,65 @@ def student_attendance_records(request):
         return redirect('home')
     records = Attendance.objects.filter(student=request.user).order_by('-date')
     total = records.count()
-    absences = records.filter(status='A').count()
-    absence_pct = (absences / total * 100) if total > 0 else 0
-    warning = (absence_pct > 25)
+    if total == 0:
+        absence_pct = 0
+        total_absent_equivalent = 0
+    else:
+        absences = records.filter(status='A').count()
+        lates = records.filter(status='L').count()
+        late_as_absent_equiv = lates // 4
+        total_absent_equivalent = absences + late_as_absent_equiv
+        absence_pct = (total_absent_equivalent / total * 100)
+
+    warning = (total_absent_equivalent >= 3)
+    expelled = (total_absent_equivalent >= 5)
+
+    if expelled:
+        messages.error(request, "You have been expelled from one or more classes due to poor attendance.")
+
     return render(request, 'attendance_records.html', {
         'records': records,
-        'absence_percentage': absence_pct,
-        'warning': warning
+        'absence_percentage': round(absence_pct, 2),
+        'total_absent_equivalent': total_absent_equivalent,
+        'warning': warning,
+        'expelled': expelled,
     })
+
+# Attendance Calculation
+def calculate_attendance_stats(student, class_instance):
+    attendance_records = Attendance.objects.filter(student=student, classid=class_instance)
+
+    total_classes = attendance_records.count()
+    if total_classes == 0:
+        return {"absent_percentage": 0, "late_percentage": 0, "total_absent_equivalent": 0}
+
+    absents = attendance_records.filter(status='A').count()
+    lates = attendance_records.filter(status='L').count()
+
+    late_as_absent_equiv = lates // 4
+
+    total_absent_equivalent = absents + late_as_absent_equiv
+
+    absent_percentage = (total_absent_equivalent / total_classes) * 100
+    late_percentage = (lates / total_classes) * 100
+
+    return {
+        "absent_percentage": round(absent_percentage, 2),
+        "late_percentage": round(late_percentage, 2),
+        "total_absent_equivalent": total_absent_equivalent
+    }
+
+# Warnings and Expulsion
+def enforce_attendance_rules(student, class_instance):
+    stats = calculate_attendance_stats(student, class_instance)
+    total_absent_equivalent = stats["total_absent_equivalent"]
+
+    if total_absent_equivalent >= 5:
+        class_instance.students.remove(student)
+        return f"{student.username} has been expelled from {class_instance.name} due to poor attendance."
+    elif total_absent_equivalent >= 3:
+        return f"Warning: {student.username} has poor attendance in {class_instance.name}."
+    return None
 
 # Generates a range of dates between start_date and end_date
 def generate_date_range(start_date, end_date):

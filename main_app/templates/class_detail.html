@@ -1,101 +1,88 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load custom_filters %}
+
 {% block content %}
+    <h2>{{ class.name }}</h2>
+    <p>{{ class.description }}</p>
+    <p>Teacher: {{ class.teacher.username }}</p>
+    <p>
+        Today's Date: <span class="current-date">{{ date }}</span>
+    </p>
 
-<h2>{{ class.name }}</h2>
-<p>{{ class.description }}</p>
-<p>Teacher: {{ class.teacher.username }}</p>
-<p>Today's Date: <span class="current-date">{{ date }}</span></p>
+    {% if user == class.teacher %}
+        <!-- Teacher-only section -->
+        <a href="{% url 'manage_join_requests' pk=class.pk %}">Manage Join Requests</a>
+        <a href="{% url 'add_student' pk=class.pk %}" class="btn btn-primary">Add Student</a>
 
-{% if user == class.teacher %}
-    <!-- Teacher-only section -->
-    <a href="{% url 'manage_join_requests' pk=class.pk %}">Manage Join Requests</a>
-    <a href="{% url 'add_student' pk=class.pk %}" class="btn btn-primary">Add Student</a>
-
-    <h3>Mark Attendance</h3>
-    {% if formset.non_form_errors %}
+        <h3>Mark Attendance</h3>
+        {% if formset.non_form_errors %}
         <div class="error-messages">
             <ul>
-                {% for error in formset.non_form_errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
+            {% for error in formset.non_form_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
             </ul>
         </div>
-    {% endif %}
-    <form method="post">
+        {% endif %}
+        <form method="post">
         {% csrf_token %}
         {{ formset.management_form }}
         <table>
             <thead>
-                <tr>
-                    <th>Student</th>
-                    <th>Status</th>
-                    <th>Reason</th>
-                    <th>Remove</th>
-                </tr>
+            <tr>
+                <th>Student</th>
+                <th>Status</th>
+                <th>Reason</th>
+            </tr>
             </thead>
             <tbody>
-                {% for form, student in zipped_data %}
-                    <tr>
-                        <td>
-                            <a href="{% url 'profile_detail' student.id %}">
-                                {{ student.username }}
-                            </a>
-                            {{ form.student.as_hidden }}
-                        </td>
-                        <td>
-                            {{ form.status|safe }}
-                        </td>
-                        <td>
-                            {{ form.reason|default:"N/A" }}
-                        </td>
-                        <td>
-                            <form method="post" action="{% url 'remove_student' class.pk student.pk %}" class="inline-form">
-                                {% csrf_token %}
-                                <button type="submit">Remove</button>
-                            </form>
-                        </td>
-                    </tr>
-                {% endfor %}
+            {% for form in formset %}
+                <tr>
+                    <td>
+                        {% with students|get_by_id:form.student.value as student %}
+                            {% if student %}
+                                <a href="{% url 'profile_detail' student.id %}">{{ student.username }}</a>
+                            {% else %}
+                                Unknown
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                <td>{{ form.status }}</td>
+                <td>{{ form.reason }}</td>
+                </tr>
+            {% endfor %}
             </tbody>
         </table>
-        <button type="submit">Submit Attendance</button>
-    </form>
-{% else %}
-    <!-- Student or non-teacher view -->
-    <h3>Enrolled Students</h3>
-    <table>
+        <button type="submit" class="btn btn-primary">Submit Attendance</button>
+        </form>
+    {% else %}
+        <!-- Student or non-teacher view -->
+        <h3>Enrolled Students</h3>
+        <table>
         <thead>
             <tr>
-                <th>Student Name</th>
+            <th>Student Name</th>
             </tr>
         </thead>
         <tbody>
-            {% if students %}
-                {% for student in students %}
-                    <tr>
-                        <td>{{ student.username }}</td>
-                    </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td>No students are currently enrolled.</td>
-                </tr>
-            {% endif %}
+            {% for student in students %}
+            <tr>
+                <td>{{ student.username }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td>No students are currently enrolled.</td>
+            </tr>
+            {% endfor %}
         </tbody>
-    </table>
-{% endif %}
+        </table>
+    {% endif %}
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const dropdowns = document.querySelectorAll('select');
-        if (dropdowns.length === 0) {
-            console.warn("No dropdowns found on this page.");
-        } else {
-            dropdowns.forEach(dropdown => {
-                dropdown.classList.add('browser-default');
-            });
-        }
-    });
-</script>
-
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('select').forEach((dropdown) => {
+            dropdown.classList.add('browser-default')
+        })
+        })
+    </script>
 {% endblock %}
