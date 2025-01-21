@@ -93,39 +93,65 @@ def class_detail(request, pk):
     students = class_instance.students.all()
     today = timezone.now().date()
 
-    if request.user.profile.role == 'Teacher' and request.user == class_instance.teacher:
-        AttendanceFormSet = modelformset_factory(
-            Attendance,
-            fields=['student', 'status', 'reason'],
-            extra=0
-        )
+    # Redirect students who are no longer part of the class
+    if request.user.profile.role == 'Student' and not students.filter(pk=request.user.pk).exists():
+        messages.warning(request, "You are no longer enrolled in this class.")
+        return redirect('home')
 
+    if request.user.profile.role == 'Teacher' and request.user == class_instance.teacher:
         if request.method == 'POST':
-            formset = AttendanceFormSet(request.POST)
-            if formset.is_valid():
-                attendance_objects = formset.save(commit=False)
-                for attendance_obj in attendance_objects:
-                    attendance_obj.classid = class_instance
-                    attendance_obj.date = today
-                    attendance_obj.save()
+            total_forms = int(request.POST.get('TOTAL_FORMS', 0))
+            forms = []
+            for i in range(total_forms):
+                form = AttendanceForm(request.POST, prefix=f'form-{i}')
+                forms.append(form)
+
+            if all(form.is_valid() for form in forms):
+                for form in forms:
+                    attendance = form.save(commit=False)
+                    attendance.classid = class_instance
+                    attendance.date = today
+                    attendance.save()
                 messages.success(request, "Attendance marked for all students!")
                 return redirect('class_detail', pk=pk)
         else:
             attendance_qs = Attendance.objects.filter(classid=class_instance, date=today)
+            forms = []
             if not attendance_qs.exists():
-                initial_data = [{'student': student.pk} for student in students]
-                formset = AttendanceFormSet(queryset=Attendance.objects.none(), initial=initial_data)
+                # Create forms for students with initial data
+                for i, student in enumerate(students):
+                    form = AttendanceForm(initial={'student': student.pk}, prefix=f'form-{i}')
+                    forms.append(form)
             else:
-                formset = AttendanceFormSet(queryset=attendance_qs)
+                # Prepopulate forms with existing attendance data
+                attendance_dict = {att.student_id: att for att in attendance_qs}
+                for i, student in enumerate(students):
+                    form = AttendanceForm(
+                        initial={
+                            'student': student.pk,
+                            'status': attendance_dict.get(student.pk).status if student.pk in attendance_dict else '',
+                            'reason': attendance_dict.get(student.pk).reason if student.pk in attendance_dict else ''
+                        },
+                        prefix=f'form-{i}'
+                    )
+                    forms.append(form)
 
-        zipped_data = zip(formset.forms, students)
+        # Management form fields
+        management_form = {
+            'TOTAL_FORMS': len(students),
+            'INITIAL_FORMS': 0,  # We are not using preloaded data for now
+        }
+
+        # Pair forms with students
+        zipped_data = zip(forms, students)
 
         return render(request, 'class_detail.html', {
             'class': class_instance,
-            'formset': formset,
+            'forms': forms,
             'zipped_data': zipped_data,
             'students': students,
-            'date': today
+            'date': today,
+            'management_form': management_form
         })
 
     return render(request, 'class_detail.html', {
@@ -177,30 +203,43 @@ def delete_class(request, class_id):
 @login_required
 def add_student(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
+    
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
         return redirect('home')
+    
+    search_results = []
+    search_query = ''
 
     if request.method == 'POST':
         search_form = StudentSearchForm(request.POST)
         if search_form.is_valid():
-            username = search_form.cleaned_data['username']
+            search_query = search_form.cleaned_data['username']
             try:
-                student_user = User.objects.get(username=username)
+                student_user = User.objects.get(username=search_query)
                 if student_user.profile.role == 'Student':
                     class_instance.students.add(student_user)
-                    messages.success(request, f"Added {username} to the class.")
+                    class_instance.save()
+                    messages.success(request, f"Added {search_query} to the class.")
                     return redirect('class_detail', pk=pk)
                 else:
                     search_form.add_error('username', 'This user is not a Student.')
             except User.DoesNotExist:
-                search_form.add_error('username', 'User not found.')
+                search_results = User.objects.filter(
+                    username__icontains=search_query, 
+                    profile__role='Student'
+                )
+                if not search_results:
+                    search_form.add_error('username', 'User not found.')
     else:
         search_form = StudentSearchForm()
 
     return render(request, 'add_student.html', {
         'class': class_instance,
-        'search_form': search_form
+        'search_form': search_form,
+        'search_results': search_results,
+        'search_query': search_query,
     })
+
 
 # Allows a teacher to remove a student from their class
 @login_required
@@ -210,7 +249,23 @@ def remove_student(request, class_pk, student_pk):
         return redirect('home')
 
     student_user = get_object_or_404(User, pk=student_pk)
+
+    # Edge case: Check if the student is part of the class
+    if not class_instance.students.filter(pk=student_pk).exists():
+        messages.warning(request, f"{student_user.username} is not enrolled in {class_instance.name}.")
+        return redirect('class_detail', pk=class_pk)
+
+    # Edge case: Prevent teacher from removing themselves
+    if student_user == request.user:
+        messages.warning(request, "You cannot remove yourself from the class.")
+        return redirect('class_detail', pk=class_pk)
+
+    # Remove the student from the class
     class_instance.students.remove(student_user)
+
+    # Remove any pending join requests for the class
+    JoinRequest.objects.filter(student=student_user, classid=class_instance).delete()
+
     messages.info(request, f"Removed {student_user.username} from {class_instance.name}.")
     return redirect('class_detail', pk=class_pk)
 
