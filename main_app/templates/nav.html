@@ -8,6 +8,16 @@
             {% if user.profile and user.profile.role == 'Teacher' %}
                 <li><a href="{% url 'create_class' %}">Create Class</a></li>
                 <li><a href="{% url 'manage_classes' %}">Manage Classes</a></li>
+                <!-- Join Requests Notification -->
+                {% with user.profile.pending_requests|length as pending_count %}
+                    {% if pending_count > 0 %}
+                        <li class="notification-indicator">
+                            <a href="{% url 'manage_join_requests' %}">
+                                Join Requests ({{ pending_count }})
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endwith %}
             {% endif %}
 
             <!-- Student-Specific Links -->
@@ -15,6 +25,10 @@
                 <li><a href="{% url 'view_classes' %}">My Classes</a></li>
                 <li><a href="{% url 'search_classes' %}">Search Classes</a></li>
                 <li><a href="{% url 'student_attendance_records' %}">Attendance Records</a></li>
+                <!-- Optional Warning Indicator -->
+                {% if user.profile.late_warning %}
+                    <li class="warning-indicator">⚠ You have received a lateness warning!</li>
+                {% endif %}
             {% endif %}
 
             <!-- Profile and Logout Links -->

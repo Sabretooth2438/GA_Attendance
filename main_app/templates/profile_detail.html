@@ -7,23 +7,40 @@
 <p>Email: {{ profile.user.email }}</p>
 <p>Role: {{ profile.role }}</p>
 
+<!-- Teacher-specific option to edit attendance -->
 {% if request.user.profile.role == 'Teacher' and class_instance %}
-    <a href="{% url 'edit_attendance' class_pk=class_instance.pk student_pk=profile.user.pk %}">
+    <a href="{% url 'edit_attendance' class_pk=class_instance.pk student_pk=profile.user.pk %}" class="btn btn-primary">
         Edit Attendance
     </a>
 {% endif %}
 
+<!-- Attendance Overview -->
+{% if class_instance %}
+    <h3>Attendance Overview for {{ class_instance.name }}</h3>
+{% else %}
+    <h3>Overall Attendance Overview</h3>
+{% endif %}
 {% if attendance_records %}
-    <h3>Attendance Overview</h3>
     <p>Total Classes: {{ total_classes }}</p>
-    <p>Total Absences: {{ total_absences }}</p>
+    <p>Total Absences (including lateness): {{ total_absences }}</p>
     <p>Absence Percentage: {{ absence_percentage }}%</p>
+    <p>Total Late Count: {{ total_late_count }}</p>
+    {% if lateness_warning %}
+        <p class="warning">⚠ Warning: {{ lateness_warning }}</p>
+    {% endif %}
 
+    <!-- Attendance Records Table -->
     <h3>Attendance Records</h3>
     <table>
-        <caption>Attendance records for {{ profile.user.username }}</caption>
+        <caption>
+            Attendance records for 
+            {{ class_instance.name if class_instance else profile.user.username }}
+        </caption>
         <thead>
             <tr>
+                {% if not class_instance %}
+                    <th>Class</th>
+                {% endif %}
                 <th>Date</th>
                 <th>Status</th>
                 <th>Reason</th>
@@ -32,6 +49,9 @@
         <tbody>
             {% for record in attendance_records %}
                 <tr>
+                    {% if not class_instance %}
+                        <td>{{ record.classid.name }}</td>
+                    {% endif %}
                     <td>{{ record.date|date:"F j, Y" }}</td>
                     <td>
                         {% if record.status == 'P' %} Present

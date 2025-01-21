@@ -15,7 +15,7 @@ STATUS_CHOICES = [
     ('E', 'Excused'),
 ]
 
-# Profile model extending User with additional details
+# Profile model to extend the User model with additional fields
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='Student')
@@ -25,12 +25,17 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.username
     
-    # Calculate profile completion percentage
     def completion_percentage(self):
         fields = [self.bio, self.profile_img]
         filled = sum(1 for field in fields if field)
         total = len(fields)
         return int(filled / total * 100) if total else 0
+
+    def pending_requests(self):
+        if self.role == 'Teacher':
+            return JoinRequest.objects.filter(classid__teacher=self.user, status='Pending')
+        return []
+
 
 # Automatically create or update Profile when a User is saved
 @receiver(post_save, sender=User)

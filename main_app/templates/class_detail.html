@@ -8,7 +8,7 @@
 
 {% if user == class.teacher %}
     <!-- Teacher-only section -->
-    <a href="{% url 'manage_join_requests' pk=class.pk %}">Manage Join Requests</a>
+    <a href="{% url 'manage_join_requests' pk=class.pk %}" class="btn btn-secondary">Manage Join Requests</a>
     <a href="{% url 'add_student' pk=class.pk %}" class="btn btn-primary">Add Student</a>
 
     <h3>Mark Attendance</h3>
@@ -41,19 +41,17 @@
                     {% for form, student in zipped_data %}
                         <tr>
                             <td>
-                                <a href="{% url 'profile_detail' student.id %}">
-                                    {{ student.username }}
-                                </a>
+                                <a href="{% url 'profile_detail' student.id %}">{{ student.username }}</a>
                                 {{ form.student.as_hidden }}
                             </td>
                             <td>
                                 {{ form.status }}
                             </td>
                             <td>
-                                {{ form.reason }}
+                                {{ form.reason|default:"N/A" }}
                             </td>
                             <td>
-                                <!-- Remove Button without Popup -->
+                                <!-- Remove Button -->
                                 <form method="post" action="{% url 'remove_student' class.pk student.pk %}" style="display: inline;">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-danger">Remove</button>
@@ -68,7 +66,10 @@
                 {% endif %}
             </tbody>            
         </table>
-        <button type="submit">Submit Attendance</button>
+        <button type="submit" class="btn btn-success" 
+            {% if attendance_marked %}disabled{% endif %}>
+            {% if attendance_marked %}Attendance Already Marked{% else %}Submit Attendance{% endif %}
+        </button>
     </form>
 {% else %}
     <!-- Student or non-teacher view -->
