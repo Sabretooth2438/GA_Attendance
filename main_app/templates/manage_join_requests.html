@@ -20,7 +20,7 @@
         <tbody>
             {% for request in join_requests %}
                 <tr>
-                    <td>{{ request.student.username }}</td>
+                    <td>{{ request.student.user.username }}</td>
                     <td>
                         <form method="post" class="action-form">
                             {% csrf_token %}

@@ -9,7 +9,9 @@ from django.utils import timezone
 from django.forms import modelformset_factory
 from datetime import timedelta, date
 from .models import Profile, Class, Attendance, JoinRequest
-from .forms import (UserRegistrationForm, ProfileForm, ClassForm, AttendanceForm)
+from .forms import (
+    UserRegistrationForm, ProfileForm, ClassForm,
+    StudentSearchForm, AttendanceForm)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -84,36 +86,18 @@ def create_class(request):
         form = ClassForm()
     return render(request, 'create_class.html', {'form': form})
 
+# Displays details of a specific class
 @login_required
 def class_detail(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
     students = class_instance.students.all()
     today = timezone.now().date()
 
-    attendance_stats = {}
-    for student in students:
-        records = Attendance.objects.filter(classid=class_instance, student=student)
-        total_classes = records.count()
-        total_absences = records.filter(status='A').count()
-        total_lates = records.filter(status='L').count()
-
-        absent_percentage = (total_absences / total_classes * 100) if total_classes > 0 else 0
-        late_percentage = (total_lates / total_classes * 100) if total_classes > 0 else 0
-        total_absent_equivalent = total_absences + (total_lates / 4 if total_classes > 0 else 0)
-
-        attendance_stats[student.id] = {
-            'absent_percentage': absent_percentage,
-            'late_percentage': late_percentage,
-            'total_absent_equivalent': total_absent_equivalent,
-        }
-
-    # Teacher-specific logic
-    if hasattr(request.user, 'profile') and request.user.profile.role == 'Teacher' and request.user == class_instance.teacher:
+    if request.user.profile.role == 'Teacher' and request.user == class_instance.teacher:
         AttendanceFormSet = modelformset_factory(
             Attendance,
             fields=['student', 'status', 'reason'],
-            extra=0,
-            can_delete=False
+            extra=0
         )
 
         if request.method == 'POST':
@@ -129,24 +113,25 @@ def class_detail(request, pk):
         else:
             attendance_qs = Attendance.objects.filter(classid=class_instance, date=today)
             if not attendance_qs.exists():
-                initial_data = [{'student': student.pk, 'status': '', 'reason': ''} for student in students]
+                initial_data = [{'student': student.pk} for student in students]
                 formset = AttendanceFormSet(queryset=Attendance.objects.none(), initial=initial_data)
             else:
                 formset = AttendanceFormSet(queryset=attendance_qs)
 
+        zipped_data = zip(formset.forms, students)
+
         return render(request, 'class_detail.html', {
             'class': class_instance,
             'formset': formset,
+            'zipped_data': zipped_data,
             'students': students,
-            'attendance_stats': attendance_stats,
-            'date': today,
+            'date': today
         })
 
     return render(request, 'class_detail.html', {
         'class': class_instance,
         'students': students,
-        'attendance_stats': attendance_stats,
-        'date': today,
+        'date': today
     })
 
 # Lists all classes managed by the teacher
@@ -188,40 +173,33 @@ def delete_class(request, class_id):
 
     return render(request, 'delete_class.html', {'class': class_instance})
 
+# Allows a teacher to add a student to their class
 @login_required
 def add_student(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
-
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
         return redirect('home')
 
-    query = request.POST.get('query', '') if request.method == 'POST' else ''
-    found_students = User.objects.filter(
-        username__icontains=query, 
-        profile__role='Student'
-    ) if query else None
-
-    if request.method == 'POST' and 'username' in request.POST:
-        username = request.POST.get('username')
-        if username:
+    if request.method == 'POST':
+        search_form = StudentSearchForm(request.POST)
+        if search_form.is_valid():
+            username = search_form.cleaned_data['username']
             try:
                 student_user = User.objects.get(username=username)
                 if student_user.profile.role == 'Student':
-                    if student_user in class_instance.students.all():
-                        messages.info(request, f"{username} is already enrolled in the class.")
-                    else:
-                        class_instance.students.add(student_user)
-                        messages.success(request, f"Added {username} to the class.")
+                    class_instance.students.add(student_user)
+                    messages.success(request, f"Added {username} to the class.")
                     return redirect('class_detail', pk=pk)
                 else:
-                    messages.error(request, "This user is not a Student.")
+                    search_form.add_error('username', 'This user is not a Student.')
             except User.DoesNotExist:
-                messages.error(request, "User not found.")
+                search_form.add_error('username', 'User not found.')
+    else:
+        search_form = StudentSearchForm()
 
     return render(request, 'add_student.html', {
         'class': class_instance,
-        'found_students': found_students,
-        'query': query,
+        'search_form': search_form
     })
 
 # Allows a teacher to remove a student from their class
@@ -239,12 +217,8 @@ def remove_student(request, class_pk, student_pk):
 # Lists all classes a student is enrolled in
 @login_required
 def view_classes(request):
-    if request.user.profile.role == 'Student':
-        enrolled = request.user.enrolled_classes.all()
-        return render(request, 'view_classes.html', {'classes': enrolled})
-    else:
-        messages.error(request, "Unauthorized access.")
-        return redirect('home')
+    enrolled = request.user.enrolled_classes.all()
+    return render(request, 'view_classes.html', {'classes': enrolled})
 
 # Allows a student to leave a class
 @login_required
@@ -261,23 +235,14 @@ def leave_class(request, pk):
 def send_join_request(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
     if request.user.profile.role != 'Student':
-        messages.error(request, "Only students can send join requests.")
         return redirect('home')
 
-    # Check for existing requests
-    existing_request = JoinRequest.objects.filter(student=request.user, classid=class_instance).first()
-
-    if existing_request:
-        if existing_request.status == 'Pending':
-            messages.info(request, "You already have a pending join request.")
-            return redirect('class_detail', pk=pk)
-        elif existing_request.status in ['Approved', 'Rejected']:
-            # Allow rejoin request by creating a new one
-            existing_request.delete()
-
-    # Create a new join request
-    JoinRequest.objects.create(student=request.user, classid=class_instance, status='Pending')
-    messages.success(request, "Join request sent.")
+    existing = JoinRequest.objects.filter(student=request.user, classid=class_instance).first()
+    if not existing:
+        JoinRequest.objects.create(student=request.user, classid=class_instance)
+        messages.success(request, "Join request sent.")
+    else:
+        messages.info(request, "You already have a pending or decided request.")
     return redirect('class_detail', pk=pk)
 
 # Allows a teacher to manage join requests
@@ -285,7 +250,6 @@ def send_join_request(request, pk):
 def manage_join_requests(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
-        messages.error(request, "Unauthorized access.")
         return redirect('home')
 
     join_requests = JoinRequest.objects.filter(classid=class_instance, status='Pending')
@@ -337,29 +301,8 @@ def mark_attendance_inline(request, class_pk, student_pk):
 # Lists attendance records for a teacher or admin
 @login_required
 def attendance_records(request):
-    if request.user.profile.role not in ['Teacher', 'Admin']:
-        return redirect('home')
-
-    class_id = request.GET.get('class_id')
-    student_id = request.GET.get('student_id')
-
-    if class_id:
-        records = Attendance.objects.filter(classid_id=class_id).order_by('-date')
-    elif student_id:
-        records = Attendance.objects.filter(student_id=student_id).order_by('-date')
-    else:
-        records = Attendance.objects.all().order_by('-date')
-
-    students = User.objects.filter(profile__role='Student')
-    stats = {
-        student.id: calculate_attendance_stats(student, class_instance=None)
-        for student in students
-    }
-
-    return render(request, 'attendance_records.html', {
-        'records': records,
-        'stats': stats,
-    })
+    records = Attendance.objects.all().order_by('-date')
+    return render(request, 'attendance_records.html', {'records': records})
 
 # Allows a student to view their own attendance records
 @login_required
@@ -368,65 +311,14 @@ def student_attendance_records(request):
         return redirect('home')
     records = Attendance.objects.filter(student=request.user).order_by('-date')
     total = records.count()
-    if total == 0:
-        absence_pct = 0
-        total_absent_equivalent = 0
-    else:
-        absences = records.filter(status='A').count()
-        lates = records.filter(status='L').count()
-        late_as_absent_equiv = lates // 4
-        total_absent_equivalent = absences + late_as_absent_equiv
-        absence_pct = (total_absent_equivalent / total * 100)
-
-    warning = (total_absent_equivalent >= 3)
-    expelled = (total_absent_equivalent >= 5)
-
-    if expelled:
-        messages.error(request, "You have been expelled from one or more classes due to poor attendance.")
-
+    absences = records.filter(status='A').count()
+    absence_pct = (absences / total * 100) if total > 0 else 0
+    warning = (absence_pct > 25)
     return render(request, 'attendance_records.html', {
         'records': records,
-        'absence_percentage': round(absence_pct, 2),
-        'total_absent_equivalent': total_absent_equivalent,
-        'warning': warning,
-        'expelled': expelled,
+        'absence_percentage': absence_pct,
+        'warning': warning
     })
-
-# Attendance Calculation
-def calculate_attendance_stats(student, class_instance):
-    attendance_records = Attendance.objects.filter(student=student, classid=class_instance)
-
-    total_classes = attendance_records.count()
-    if total_classes == 0:
-        return {"absent_percentage": 0, "late_percentage": 0, "total_absent_equivalent": 0}
-
-    absents = attendance_records.filter(status='A').count()
-    lates = attendance_records.filter(status='L').count()
-
-    late_as_absent_equiv = lates // 4
-
-    total_absent_equivalent = absents + late_as_absent_equiv
-
-    absent_percentage = (total_absent_equivalent / total_classes) * 100
-    late_percentage = (lates / total_classes) * 100
-
-    return {
-        "absent_percentage": round(absent_percentage, 2),
-        "late_percentage": round(late_percentage, 2),
-        "total_absent_equivalent": total_absent_equivalent
-    }
-
-# Warnings and Expulsion
-def enforce_attendance_rules(student, class_instance):
-    stats = calculate_attendance_stats(student, class_instance)
-    total_absent_equivalent = stats["total_absent_equivalent"]
-
-    if total_absent_equivalent >= 5:
-        class_instance.students.remove(student)
-        return f"{student.username} has been expelled from {class_instance.name} due to poor attendance."
-    elif total_absent_equivalent >= 3:
-        return f"Warning: {student.username} has poor attendance in {class_instance.name}."
-    return None
 
 # Generates a range of dates between start_date and end_date
 def generate_date_range(start_date, end_date):

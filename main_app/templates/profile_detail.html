@@ -16,15 +16,8 @@
 {% if attendance_records %}
     <h3>Attendance Overview</h3>
     <p>Total Classes: {{ total_classes }}</p>
-    <p>Total Absences (Including Late): {{ total_absent_equivalent }}</p>
+    <p>Total Absences: {{ total_absences }}</p>
     <p>Absence Percentage: {{ absence_percentage }}%</p>
-    <p>Late Percentage: {{ late_percentage }}%</p>
-
-    {% if expelled %}
-        <p class="expelled-text">❌ This student has been expelled due to poor attendance.</p>
-    {% elif warning %}
-        <p class="warning-text">⚠️ This student has received a warning for poor attendance.</p>
-    {% endif %}
 
     <h3>Attendance Records</h3>
     <table>
@@ -41,10 +34,10 @@
                 <tr>
                     <td>{{ record.date|date:"F j, Y" }}</td>
                     <td>
-                        {% if record.status == 'P' %} ✅ Present
-                        {% elif record.status == 'A' %} ❌ Absent
-                        {% elif record.status == 'L' %} ⏰ Late
-                        {% elif record.status == 'E' %} ✉️ Excused
+                        {% if record.status == 'P' %} Present
+                        {% elif record.status == 'A' %} Absent
+                        {% elif record.status == 'L' %} Late
+                        {% elif record.status == 'E' %} Excused
                         {% endif %}
                     </td>
                     <td>{{ record.reason|default:"N/A" }}</td>
