@@ -7,66 +7,59 @@
 <p>Email: {{ profile.user.email }}</p>
 <p>Role: {{ profile.role }}</p>
 
-<!-- Teacher-specific option to edit attendance -->
-{% if request.user.profile.role == 'Teacher' and class_instance %}
-    <a href="{% url 'edit_attendance' class_pk=class_instance.pk student_pk=profile.user.pk %}" class="btn btn-primary">
-        Edit Attendance
-    </a>
-{% endif %}
+{% if is_teacher %}
+    {% if class_instance %}
+        <h3>Attendance Overview for {{ class_instance.name }}</h3>
+        {% if attendance_records %}
+            <p>Total Classes: {{ total_classes }}</p>
+            <p>Total Absences (including lateness): {{ total_absences }}</p>
+            <p>Absence Percentage: {{ absence_percentage }}%</p>
+            <p>Total Late Count: {{ total_late_count }}</p>
 
-<!-- Attendance Overview -->
-{% if class_instance %}
-    <h3>Attendance Overview for {{ class_instance.name }}</h3>
-{% else %}
-    <h3>Overall Attendance Overview</h3>
-{% endif %}
-{% if attendance_records %}
-    <p>Total Classes: {{ total_classes }}</p>
-    <p>Total Absences (including lateness): {{ total_absences }}</p>
-    <p>Absence Percentage: {{ absence_percentage }}%</p>
-    <p>Total Late Count: {{ total_late_count }}</p>
-    {% if lateness_warning %}
-        <p class="warning">⚠ Warning: {{ lateness_warning }}</p>
+            <h3>Attendance Records</h3>
+            <table>
+                <caption>Attendance records for {{ class_instance.name }}</caption>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Reason</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in attendance_records %}
+                        <tr>
+                            <td>{{ record.date|date:"F j, Y" }}</td>
+                            <td>
+                                {% if record.status == 'P' %} Present
+                                {% elif record.status == 'A' %} Absent
+                                {% elif record.status == 'L' %} Late
+                                {% elif record.status == 'E' %} Excused
+                                {% endif %}
+                            </td>
+                            <td>{{ record.reason|default:"N/A" }}</td>
+                            <td>
+                                <a href="{% url 'edit_attendance' class_pk=class_instance.pk student_pk=profile.user.pk %}" class="btn btn-primary">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No attendance records available for this class.</p>
+        {% endif %}
+    {% else %}
+        <p>No class selected. Please access this profile from a specific class.</p>
     {% endif %}
-
-    <!-- Attendance Records Table -->
-    <h3>Attendance Records</h3>
-    <table>
-        <caption>
-            Attendance records for 
-            {{ class_instance.name if class_instance else profile.user.username }}
-        </caption>
-        <thead>
-            <tr>
-                {% if not class_instance %}
-                    <th>Class</th>
-                {% endif %}
-                <th>Date</th>
-                <th>Status</th>
-                <th>Reason</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for record in attendance_records %}
-                <tr>
-                    {% if not class_instance %}
-                        <td>{{ record.classid.name }}</td>
-                    {% endif %}
-                    <td>{{ record.date|date:"F j, Y" }}</td>
-                    <td>
-                        {% if record.status == 'P' %} Present
-                        {% elif record.status == 'A' %} Absent
-                        {% elif record.status == 'L' %} Late
-                        {% elif record.status == 'E' %} Excused
-                        {% endif %}
-                    </td>
-                    <td>{{ record.reason|default:"N/A" }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
 {% else %}
-    <p>No attendance records available for this user.</p>
+    {% if is_own_profile %}
+        <p>This is your profile. Attendance records are available in your dashboard.</p>
+    {% else %}
+        <p>This is a student's profile, and attendance records are not available.</p>
+    {% endif %}
 {% endif %}
 
 {% endblock %}

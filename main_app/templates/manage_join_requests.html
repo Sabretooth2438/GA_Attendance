@@ -7,7 +7,7 @@
 <div class="back-to-class">
     <a href="{% url 'class_detail' pk=class.pk %}" class="btn btn-primary">Back to Current Class</a>
 </div>
-<p>Teacher: {{ class.teacher.username }}</p>
+<p>Teacher: <a href="{% url 'profile_detail' user_id=class.teacher.id %}">{{ class.teacher.username }}</a></p>
 
 {% if join_requests %}
     <table class="join-requests-table">
@@ -20,13 +20,17 @@
         <tbody>
             {% for request in join_requests %}
                 <tr>
-                    <td>{{ request.student.username }}</td>
+                    <td>
+                        <a href="{% url 'profile_detail' user_id=request.student.id %}">
+                            {{ request.student.username }}
+                        </a>
+                    </td>
                     <td>
                         <form method="post" class="action-form">
                             {% csrf_token %}
                             <input type="hidden" name="request_id" value="{{ request.id }}">
-                            <button type="submit" name="action" value="approve" class="approve-btn">Approve</button>
-                            <button type="submit" name="action" value="reject" class="reject-btn">Reject</button>
+                            <button type="submit" name="action" value="approve" class="btn btn-success">Approve</button>
+                            <button type="submit" name="action" value="reject" class="btn btn-danger">Reject</button>
                         </form>
                     </td>
                 </tr>

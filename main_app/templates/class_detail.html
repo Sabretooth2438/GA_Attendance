@@ -3,7 +3,7 @@
 
 <h2>{{ class.name }}</h2>
 <p>{{ class.description }}</p>
-<p>Teacher: {{ class.teacher.username }}</p>
+<p>Teacher: <a href="{% url 'profile_detail' user_id=class.teacher.id %}">{{ class.teacher.username }}</a></p>
 <p>Today's Date: <span class="current-date">{{ date }}</span></p>
 
 {% if user == class.teacher %}
@@ -41,7 +41,9 @@
                     {% for form, student in zipped_data %}
                         <tr>
                             <td>
-                                <a href="{% url 'profile_detail' student.id %}">{{ student.username }}</a>
+                                <a href="{% url 'profile_detail' user_id=student.id %}?class_pk={{ class.pk }}">
+                                    {{ student.username }}
+                                </a>
                                 {{ form.student.as_hidden }}
                             </td>
                             <td>
@@ -51,11 +53,9 @@
                                 {{ form.reason|default:"N/A" }}
                             </td>
                             <td>
-                                <!-- Remove Button -->
-                                <form method="post" action="{% url 'remove_student' class.pk student.pk %}" style="display: inline;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-danger">Remove</button>
-                                </form>
+                                <a href="{% url 'remove_student' class.pk student.pk %}" class="btn btn-danger">
+                                    Remove
+                                </a>
                             </td>
                         </tr>
                     {% endfor %}
@@ -84,7 +84,9 @@
             {% if students %}
                 {% for student in students %}
                     <tr>
-                        <td>{{ student.username }}</td>
+                        <td>
+                            <a href="{% url 'profile_detail' user_id=student.id %}?class_pk={{ class.pk }}">{{ student.username }}</a>
+                        </td>
                     </tr>
                 {% endfor %}
             {% else %}

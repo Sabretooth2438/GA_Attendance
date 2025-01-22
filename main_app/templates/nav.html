@@ -11,11 +11,15 @@
                 <!-- Join Requests Notification -->
                 {% with user.profile.pending_requests|length as pending_count %}
                     {% if pending_count > 0 %}
-                        <li class="notification-indicator">
-                            <a href="{% url 'manage_join_requests' %}">
-                                Join Requests ({{ pending_count }})
-                            </a>
-                        </li>
+                        {% if some_class %}
+                            <li class="notification-indicator">
+                                <a href="{% url 'manage_join_requests' pk=some_class.pk %}">
+                                    Join Requests ({{ pending_count }})
+                                </a>
+                            </li>
+                        {% else %}
+                            <li>No active class for join requests.</li>
+                        {% endif %}
                     {% endif %}
                 {% endwith %}
             {% endif %}
