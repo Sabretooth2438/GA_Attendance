@@ -9,6 +9,7 @@
                 <li class="nav-item">
                     <a class="nav-link text-white" href="{% url 'home' %}">Home</a>
                 </li>
+
                 {% if user.is_authenticated %}
                     {% if user.profile and user.profile.role == 'Teacher' %}
                         <li class="nav-item">
@@ -17,7 +18,17 @@
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{% url 'manage_classes' %}">Manage Classes</a>
                         </li>
+                        {% with user.profile.pending_requests|length as pending_count %}
+                            {% if pending_count > 0 %}
+                                <li class="nav-item notification-indicator">
+                                    <a class="nav-link text-warning" href="{% url 'manage_join_requests' pk=some_class.pk %}">
+                                        Join Requests ({{ pending_count }})
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endwith %}
                     {% endif %}
+
                     {% if user.profile and user.profile.role == 'Student' %}
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{% url 'view_classes' %}">My Classes</a>
@@ -25,14 +36,23 @@
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{% url 'search_classes' %}">Search Classes</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{% url 'student_attendance_records' %}">Attendance Records</a>
+                        </li>
+                        {% if user.profile.late_warning %}
+                            <li class="nav-item">
+                                <span class="text-warning">⚠ You have received a lateness warning!</span>
+                            </li>
+                        {% endif %}
                     {% endif %}
+
                     <li class="nav-item">
                         <a class="nav-link text-white" href="{% url 'profile' %}">Profile</a>
                     </li>
                     <li class="nav-item">
                         <form method="post" action="{% url 'logout' %}" class="d-inline">
                             {% csrf_token %}
-                            <button type="submit" class="text-white nav-link">Logout</button>
+                            <button type="submit" class="nav-link text-white">Logout</button>
                         </form>
                     </li>
                 {% else %}
