@@ -19,7 +19,11 @@
                     <a href="{% url 'class_detail' pk=class.pk %}" class="class-link">{{ class.name }}</a>
                     <form method="post" action="{% url 'send_join_request' pk=class.pk %}" class="join-form">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-join">Join</button>
+                        <button type="submit" class="btn btn-join"
+                            {% if class in joined_classes %}disabled{% endif %}
+                            {% if class.id in pending_requests %}disabled{% endif %}>
+                            {% if class in joined_classes %}Already Joined{% elif class.id in pending_requests %}Request Pending{% else %}Join{% endif %}
+                        </button>
                     </form>
                 </li>
             {% endfor %}

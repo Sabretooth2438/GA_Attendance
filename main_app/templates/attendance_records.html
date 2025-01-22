@@ -9,30 +9,37 @@
     <p class="warning-text">Warning: Your absence percentage exceeds 25%!</p>
 {% endif %}
 
-<table>
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for record in records %}
-            <tr>
-                <td>{{ record.date }}</td>
-                <td>
-                    {% if record.status == 'P' %}
-                        ✅ Present
-                    {% elif record.status == 'A' %}
-                        ❌ Absent
-                    {% elif record.status == 'L' %}
-                        ⏰ Late
-                    {% elif record.status == 'E' %}
-                        ✉️ Excused
-                    {% endif %}
-                </td>
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
+{% if records %}
+    {% for class_instance, class_records in records.items %}
+        <h3>Class: {{ class_instance.name }}</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in class_records %}
+                    <tr>
+                        <td>{{ record.date }}</td>
+                        <td>
+                            {% if record.status == 'P' %}
+                                ✅ Present
+                            {% elif record.status == 'A' %}
+                                ❌ Absent
+                            {% elif record.status == 'L' %}
+                                ⏰ Late
+                            {% elif record.status == 'E' %}
+                                ✉️ Excused
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+{% else %}
+    <p>No attendance records available.</p>
+{% endif %}
 {% endblock %}

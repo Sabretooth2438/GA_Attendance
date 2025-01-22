@@ -33,7 +33,11 @@
             {% for student in search_results %}
                 <li>
                     {{ student.username }}
-                    <button type="submit" name="username" value="{{ student.username }}" class="btn btn-join">Add</button>
+                    <button type="submit" name="username" value="{{ student.username }}" 
+                        class="btn btn-join" 
+                        {% if student in class.students.all %}disabled{% endif %}>
+                        {% if student in class.students.all %}Already Added{% else %}Add{% endif %}
+                    </button>
                 </li>
             {% endfor %}
         </ul>

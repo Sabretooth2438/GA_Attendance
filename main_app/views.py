@@ -98,12 +98,15 @@ def class_detail(request, pk):
         return redirect('home')
 
     if request.user.profile.role == 'Teacher' and request.user == class_instance.teacher:
+        attendance_qs = Attendance.objects.filter(classid=class_instance, date=today)
+        attendance_marked = attendance_qs.exists()
+
         if request.method == 'POST':
             total_forms = int(request.POST.get('TOTAL_FORMS', 0))
-            forms = []
-            for i in range(total_forms):
-                form = AttendanceForm(request.POST, prefix=f'form-{i}')
-                forms.append(form)
+            forms = [
+                AttendanceForm(request.POST, prefix=f'form-{i}')
+                for i in range(total_forms)
+            ]
 
             if all(form.is_valid() for form in forms):
                 for form in forms:
@@ -111,19 +114,21 @@ def class_detail(request, pk):
                     attendance.classid = class_instance
                     attendance.date = today
                     attendance.save()
+                    process_attendance_rules(attendance, class_instance)
+
                 messages.success(request, "Attendance marked for all students!")
                 return redirect('class_detail', pk=pk)
         else:
-            attendance_qs = Attendance.objects.filter(classid=class_instance, date=today)
             forms = []
-            if not attendance_qs.exists():
-                for i, student in enumerate(students):
-                    form = AttendanceForm(initial={'student': student.pk}, prefix=f'form-{i}')
-                    forms.append(form)
+            if not attendance_marked:
+                forms = [
+                    AttendanceForm(initial={'student': student.pk}, prefix=f'form-{i}')
+                    for i, student in enumerate(students)
+                ]
             else:
                 attendance_dict = {att.student_id: att for att in attendance_qs}
-                for i, student in enumerate(students):
-                    form = AttendanceForm(
+                forms = [
+                    AttendanceForm(
                         initial={
                             'student': student.pk,
                             'status': attendance_dict.get(student.pk).status if student.pk in attendance_dict else '',
@@ -131,7 +136,8 @@ def class_detail(request, pk):
                         },
                         prefix=f'form-{i}'
                     )
-                    forms.append(form)
+                    for i, student in enumerate(students)
+                ]
 
         management_form = {
             'TOTAL_FORMS': len(students),
@@ -146,13 +152,14 @@ def class_detail(request, pk):
             'zipped_data': zipped_data,
             'students': students,
             'date': today,
-            'management_form': management_form
+            'management_form': management_form,
+            'attendance_marked': attendance_marked,
         })
 
     return render(request, 'class_detail.html', {
         'class': class_instance,
         'students': students,
-        'date': today
+        'date': today,
     })
 
 # Lists all classes managed by the teacher
@@ -168,16 +175,18 @@ def manage_classes(request):
 def edit_class(request, class_id):
     class_instance = get_object_or_404(Class, pk=class_id)
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
+        messages.error(request, "You are not authorized to edit this class.")
         return redirect('home')
 
     if request.method == 'POST':
         form = ClassForm(request.POST, instance=class_instance)
         if form.is_valid():
             form.save()
-            messages.success(request, "Class updated!")
+            messages.success(request, "Class updated successfully!")
             return redirect('class_detail', pk=class_id)
     else:
         form = ClassForm(instance=class_instance)
+
     return render(request, 'edit_class.html', {'form': form, 'class': class_instance})
 
 # Allows a teacher to delete a class
@@ -185,11 +194,12 @@ def edit_class(request, class_id):
 def delete_class(request, class_id):
     class_instance = get_object_or_404(Class, pk=class_id)
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
+        messages.error(request, "You are not authorized to delete this class.")
         return redirect('home')
 
     if request.method == 'POST':
         class_instance.delete()
-        messages.success(request, "Class deleted.")
+        messages.success(request, "Class deleted successfully.")
         return redirect('manage_classes')
 
     return render(request, 'delete_class.html', {'class': class_instance})
@@ -198,10 +208,10 @@ def delete_class(request, class_id):
 @login_required
 def add_student(request, pk):
     class_instance = get_object_or_404(Class, pk=pk)
-    
+
     if request.user.profile.role != 'Teacher' or request.user != class_instance.teacher:
         return redirect('home')
-    
+
     search_results = []
     search_query = ''
 
@@ -212,6 +222,10 @@ def add_student(request, pk):
             try:
                 student_user = User.objects.get(username=search_query)
                 if student_user.profile.role == 'Student':
+                    if class_instance.students.filter(pk=student_user.pk).exists():
+                        messages.warning(request, f"{search_query} is already in the class.")
+                        return redirect('class_detail', pk=pk)
+
                     class_instance.students.add(student_user)
                     class_instance.save()
                     messages.success(request, f"Added {search_query} to the class.")
@@ -222,7 +236,7 @@ def add_student(request, pk):
                 search_results = User.objects.filter(
                     username__icontains=search_query, 
                     profile__role='Student'
-                )
+                ).exclude(pk__in=class_instance.students.values_list('pk', flat=True))
                 if not search_results:
                     search_form.add_error('username', 'User not found.')
     else:
@@ -234,7 +248,6 @@ def add_student(request, pk):
         'search_results': search_results,
         'search_query': search_query,
     })
-
 
 # Allows a teacher to remove a student from their class
 @login_required
@@ -350,21 +363,52 @@ def attendance_records(request):
     records = Attendance.objects.all().order_by('-date')
     return render(request, 'attendance_records.html', {'records': records})
 
-# Allows a student to view their own attendance records
+# Allows a student to view their own attendance records grouped by class
 @login_required
 def student_attendance_records(request):
     if request.user.profile.role != 'Student':
         return redirect('home')
-    records = Attendance.objects.filter(student=request.user).order_by('-date')
-    total = records.count()
-    absences = records.filter(status='A').count()
-    absence_pct = (absences / total * 100) if total > 0 else 0
+    
+    attendance_qs = Attendance.objects.filter(student=request.user).select_related('classid').order_by('-date')
+    records_by_class = {}
+    
+    for record in attendance_qs:
+        class_instance = record.classid
+        if class_instance not in records_by_class:
+            records_by_class[class_instance] = []
+        records_by_class[class_instance].append(record)
+
+    total_records = attendance_qs.count()
+    absences = attendance_qs.filter(status='A').count()
+    absence_pct = (absences / total_records * 100) if total_records > 0 else 0
     warning = (absence_pct > 25)
+
     return render(request, 'attendance_records.html', {
-        'records': records,
+        'records': records_by_class,
         'absence_percentage': absence_pct,
-        'warning': warning
+        'warning': warning,
     })
+
+
+# Processes attendance rules for a student
+def process_attendance_rules(attendance, class_instance):
+    student = attendance.student
+    late_count = Attendance.objects.filter(student=student, classid=class_instance, status='L').count()
+    absent_count = Attendance.objects.filter(student=student, classid=class_instance, status='A').count()
+
+    lateness_absences = late_count // 4
+    total_absent = absent_count + lateness_absences
+
+    if late_count == 3:
+        messages.warning(
+            None, f"{student.username} has received a warning for lateness."
+        )
+    elif late_count >= 5:
+        class_instance.students.remove(student)
+        messages.warning(
+            None,
+            f"{student.username} has been removed from {class_instance.name} due to repeated lateness.",
+        )
 
 # Generates a range of dates between start_date and end_date
 def generate_date_range(start_date, end_date):
@@ -411,29 +455,68 @@ def edit_attendance(request, class_pk, student_pk):
 
 # Displays detailed profile information for a user
 @login_required
-def profile_detail(request, user_id):
+def profile_detail(request, user_id, class_pk=None):
     user_profile = get_object_or_404(Profile, user_id=user_id)
-    attendance_records = Attendance.objects.filter(student=user_profile.user).order_by('-date')
-    total_classes = attendance_records.count()
-    total_absences = attendance_records.filter(status='A').count()
-    absence_percentage = (total_absences / total_classes * 100) if total_classes > 0 else 0
-    class_instance = user_profile.user.enrolled_classes.first() if hasattr(user_profile.user, 'enrolled_classes') else None
 
-    return render(request, 'profile_detail.html', {
-        'profile': user_profile,
-        'attendance_records': attendance_records,
-        'total_classes': total_classes,
-        'total_absences': total_absences,
-        'absence_percentage': round(absence_percentage, 2),
-        'class_instance': class_instance,
+    is_teacher = request.user.profile.role == 'Teacher'
+    is_own_profile = request.user.id == user_id
+
+    class_instance = None
+    attendance_records = []
+    total_classes = total_absences = absence_percentage = total_late_count = 0
+
+    if is_teacher:
+        if class_pk:
+            class_instance = get_object_or_404(Class, pk=class_pk)
+            if class_instance.teacher != request.user:
+                messages.error(request, "You are not authorized to view this class.")
+                return redirect("home")
+
+            attendance_records = Attendance.objects.filter(
+                student=user_profile.user, classid=class_instance
+            ).order_by("-date")
+
+            total_classes = attendance_records.count()
+            total_absences = attendance_records.filter(status="A").count()
+            total_late_count = attendance_records.filter(status="L").count()
+            lateness_absences = total_late_count // 4
+            absence_percentage = (
+                ((total_absences + lateness_absences) / total_classes) * 100
+                if total_classes > 0
+                else 0
+            )
+        else:
+            messages.error(request, "A class must be specified to view attendance.")
+            return redirect("home")
+
+    elif not is_own_profile:
+        attendance_records = []
+        total_classes = total_absences = absence_percentage = total_late_count = 0
+
+    return render(request, "profile_detail.html", {
+        "profile": user_profile,
+        "is_teacher": is_teacher,
+        "attendance_records": attendance_records,
+        "total_classes": total_classes,
+        "total_absences": total_absences,
+        "total_late_count": total_late_count,
+        "absence_percentage": round(absence_percentage, 2),
+        "class_instance": class_instance,
     })
 
-# Searches for classes by keyword or shows all classes
 @login_required
 def search_classes(request):
     query = request.POST.get('query', '') if request.method == 'POST' else ''
+
     found_classes = Class.objects.filter(name__icontains=query) if query else Class.objects.all()
+
+    joined_classes = request.user.enrolled_classes.all()
+
+    pending_requests = JoinRequest.objects.filter(student=request.user, status='Pending').values_list('classid', flat=True)
+
     return render(request, 'search_classes.html', {
         'classes': found_classes,
-        'query': query
+        'query': query,
+        'joined_classes': joined_classes,
+        'pending_requests': pending_requests,
     })
