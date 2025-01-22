@@ -1,15 +1,35 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block title %}
     Sign Up | GA Attendance
 {% endblock %}
 
 {% block content %}
-    <h2>Sign Up</h2>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ user_form.as_p }}
-        {{ profile_form.as_p }}
-        <button type="submit">Sign Up</button>
-    </form>
+    <div class="container mt-5">
+        <h2 class="text-center text-primary mb-4">Sign Up</h2>
+
+        <form method="post" enctype="multipart/form-data" class="p-4 border rounded shadow-sm bg-light">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label for="id_username" class="form-label">Username</label>
+                {{ user_form.username|add_class:"form-control" }}
+            </div>
+            <div class="mb-3">
+                <label for="id_email" class="form-label">Email</label>
+                {{ user_form.email|add_class:"form-control" }}
+            </div>
+            <div class="mb-3">
+                <label for="id_password" class="form-label">Password</label>
+                {{ user_form.password|add_class:"form-control" }}
+            </div>
+            <div class="mb-3">
+                <label for="id_password2" class="form-label">Repeat Password</label>
+                {{ user_form.password2|add_class:"form-control" }}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Sign Up</button>
+        </form>
+    </div>
 {% endblock %}

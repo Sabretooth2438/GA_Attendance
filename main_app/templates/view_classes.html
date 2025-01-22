@@ -5,16 +5,21 @@
 {% endblock %}
 
 {% block content %}
-    <h2>My Classes</h2>
-    {% if classes %}
-        <ul class="class-list">
-            {% for class in classes %}
-                <li class="class-item">
-                    <a href="{% url 'class_detail' pk=class.pk %}" class="class-link">{{ class.name }}</a>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p class="no-classes">You are not assigned to any class.</p>
-    {% endif %}
+    <div class="container mt-5">
+        <h2 class="text-center">My Classes</h2>
+
+        {% if classes %}
+            <ul class="list-group">
+                {% for class in classes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'class_detail' pk=class.pk %}" class="text-decoration-none">
+                            <strong>{{ class.name }}</strong>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-center text-muted">You are not assigned to any class.</p>
+        {% endif %}
+    </div>
 {% endblock %}

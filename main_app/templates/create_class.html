@@ -1,19 +1,47 @@
 {% extends "base.html" %}
+{% load custom_filters %}
 
 {% block title %}Create/Edit Class | GA Attendance{% endblock %}
 
 {% block content %}
-<h2>{{ class_instance.name|default:"Create a New Class" }}</h2>
+<div class="container mt-5">
+    <div class="card shadow-lg">
+        <div class="card-body">
+            <h2 class="text-danger text-center mb-4">{{ class_instance.name|default:"Create a New Class" }}</h2>
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
+            <form method="post" class="mt-4">
+                {% csrf_token %}
 
-    <button type="submit" class="btn btn-primary">Save</button>
-    {% if class_instance %}
-        <a href="{% url 'class_detail' class_instance.pk %}" class="btn btn-secondary">Cancel</a>
-    {% else %}
-        <a href="{% url 'manage_classes' %}" class="btn btn-secondary">Cancel</a>
-    {% endif %}
-</form>
+                <div class="mb-3">
+                    {{ form.name.label_tag }}
+                    {{ form.name|add_class:"form-control" }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.description.label_tag }}
+                    {{ form.description|add_class:"form-control" }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.start_date.label_tag }}
+                    {{ form.start_date|add_class:"form-control" }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.end_date.label_tag }}
+                    {{ form.end_date|add_class:"form-control" }}
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-danger px-4">Save</button>
+                    {% if class_instance %}
+                        <a href="{% url 'class_detail' class_instance.pk %}" class="btn btn-secondary px-4">Cancel</a>
+                    {% else %}
+                        <a href="{% url 'manage_classes' %}" class="btn btn-secondary px-4">Cancel</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

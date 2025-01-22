@@ -1,52 +1,49 @@
-<nav>
-    <ul class="nav-links">
-        <!-- Common Links -->
-        <li><a href="{% url 'home' %}">Home</a></li>
-
-        {% if user.is_authenticated %}
-            <!-- Teacher-Specific Links -->
-            {% if user.profile and user.profile.role == 'Teacher' %}
-                <li><a href="{% url 'create_class' %}">Create Class</a></li>
-                <li><a href="{% url 'manage_classes' %}">Manage Classes</a></li>
-                <!-- Join Requests Notification -->
-                {% with user.profile.pending_requests|length as pending_count %}
-                    {% if pending_count > 0 %}
-                        {% if some_class %}
-                            <li class="notification-indicator">
-                                <a href="{% url 'manage_join_requests' pk=some_class.pk %}">
-                                    Join Requests ({{ pending_count }})
-                                </a>
-                            </li>
-                        {% else %}
-                            <li>No active class for join requests.</li>
-                        {% endif %}
+<nav class="navbar navbar-expand-lg bg-danger navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'home' %}">GA Attendance</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="{% url 'home' %}">Home</a>
+                </li>
+                {% if user.is_authenticated %}
+                    {% if user.profile and user.profile.role == 'Teacher' %}
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{% url 'create_class' %}">Create Class</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{% url 'manage_classes' %}">Manage Classes</a>
+                        </li>
                     {% endif %}
-                {% endwith %}
-            {% endif %}
-
-            <!-- Student-Specific Links -->
-            {% if user.profile and user.profile.role == 'Student' %}
-                <li><a href="{% url 'view_classes' %}">My Classes</a></li>
-                <li><a href="{% url 'search_classes' %}">Search Classes</a></li>
-                <li><a href="{% url 'student_attendance_records' %}">Attendance Records</a></li>
-                <!-- Optional Warning Indicator -->
-                {% if user.profile.late_warning %}
-                    <li class="warning-indicator">⚠ You have received a lateness warning!</li>
+                    {% if user.profile and user.profile.role == 'Student' %}
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{% url 'view_classes' %}">My Classes</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{% url 'search_classes' %}">Search Classes</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'profile' %}">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <form method="post" action="{% url 'logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-white nav-link">Logout</button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'signup' %}">Sign Up</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'login' %}">Login</a>
+                    </li>
                 {% endif %}
-            {% endif %}
-
-            <!-- Profile and Logout Links -->
-            <li><a href="{% url 'profile' %}">Profile</a></li>
-            <li>
-                <form method="post" action="{% url 'logout' %}" class="logout-form">
-                    {% csrf_token %}
-                    <button type="submit" class="logout-btn">Logout</button>
-                </form>
-            </li>
-        {% else %}
-            <!-- Guest Links -->
-            <li><a href="{% url 'signup' %}">Sign Up</a></li>
-            <li><a href="{% url 'login' %}">Login</a></li>
-        {% endif %}
-    </ul>
+            </ul>
+        </div>
+    </div>
 </nav>

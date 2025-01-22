@@ -5,8 +5,20 @@
 {% endblock %}
 
 {% block content %}
-  <div class="home-container">
-    <h1>Welcome to GA Attendance</h1>
-    <p>This is the home page.</p>
+  <div class="container mt-5 text-center">
+    <h1 class="text-danger">Welcome to GA Attendance</h1>
+
+    {% if user.is_authenticated %}
+      <h2 class="text-muted mb-4">Hello, {{ user.username }}!</h2>
+      <h2>Welcome to your dashboard.</h2>
+    {% else %}
+      <p class="text-muted mb-4">Please log in to access your dashboard.</p>
+    {% endif %}
+
+    <div class="mb-4">
+      <img src="https://i.imgur.com/kmNRIR0.png" alt="GA Attendance Logo" class="rotating-image">
+    </div>
+
+    <p class="mt-5 text-muted">If you need assistance, please refer to the help section or contact support.</p>
   </div>
 {% endblock %}

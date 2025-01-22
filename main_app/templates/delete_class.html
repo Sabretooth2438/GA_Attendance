@@ -5,11 +5,18 @@
 {% endblock %}
 
 {% block content %}
-    <h2>Confirm Deletion</h2>
-    <p>Are you sure you want to delete the class "<strong>{{ class.name }}</strong>"?</p>
-    <form method="post" class="delete-class-form">
+<div class="container mt-5">
+    <h2 class="text-center text-danger">Confirm Deletion</h2>
+    <p class="text-center">Are you sure you want to delete the class "<strong>{{ class.name }}</strong>"?</p>
+    
+    <form method="post" class="delete-class-form text-center">
         {% csrf_token %}
-        <button type="submit" class="btn btn-danger">Delete Class</button>
-        <a href="{% url 'class_detail' pk=class.pk %}" class="btn btn-secondary">Cancel</a>
+        
+        <!-- Delete Button -->
+        <button type="submit" class="btn btn-danger btn-lg">Delete Class</button>
+
+        <!-- Cancel Button -->
+        <a href="{% url 'class_detail' pk=class.pk %}" class="btn btn-secondary btn-lg ml-3">Cancel</a>
     </form>
+</div>
 {% endblock %}

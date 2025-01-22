@@ -41,7 +41,11 @@ class AttendanceForm(forms.ModelForm):
 
 # Allows searching for a student by username
 class StudentSearchForm(forms.Form):
-    username = forms.CharField(max_length=150, label='Student username')
+    username = forms.CharField(
+        max_length=150,
+        label='Student username',
+        widget=forms.TextInput(attrs={'placeholder': 'Search for a student'})
+    )
 
 # Allows teachers to edit class details
 class EditClassForm(forms.ModelForm):
