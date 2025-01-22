@@ -5,14 +5,17 @@
 {% endblock %}
 
 {% block content %}
-    <h2>Manage Classes</h2>
-    <div class="create-class-link">
-        <a href="{% url 'create_class' %}">Create New Class</a>
+<div class="container mt-5">
+    <h2 class="text-danger text-center mb-4">Manage Classes</h2>
+
+    <div class="text-end mb-3">
+        <a href="{% url 'create_class' %}" class="btn btn-success">Create New Class</a>
     </div>
-    <div class="class-list-container">
+
+    <div class="table-responsive">
         {% if classes %}
-            <table class="class-table">
-                <thead>
+            <table class="table table-striped table-bordered">
+                <thead class="table-dark">
                     <tr>
                         <th>Class Name</th>
                         <th>Actions</th>
@@ -20,20 +23,21 @@
                 </thead>
                 <tbody>
                     {% for class in classes %}
-                    <tr>
-                        <td>
-                            <a href="{% url 'class_detail' pk=class.pk %}">{{ class.name }}</a>
-                        </td>
-                        <td>
-                            <a href="{% url 'edit_class' class_id=class.pk %}" class="edit-link">Edit</a>
-                            <a href="{% url 'delete_class' class_id=class.pk %}" class="delete-link">Delete</a>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td>
+                                <a href="{% url 'class_detail' pk=class.pk %}" class="text-decoration-none">{{ class.name }}</a>
+                            </td>
+                            <td>
+                                <a href="{% url 'edit_class' class_id=class.pk %}" class="btn btn-primary btn-sm me-2">Edit</a>
+                                <a href="{% url 'delete_class' class_id=class.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                            </td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
         {% else %}
-            <p>No classes available. <a href="{% url 'create_class' %}">Create a new class</a>.</p>
+            <p class="text-center text-muted">No classes available. <a href="{% url 'create_class' %}" class="text-success">Create a new class</a>.</p>
         {% endif %}
     </div>
+</div>
 {% endblock %}

@@ -1,114 +1,116 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}
+    Class Details | GA Attendance
+{% endblock %}
+
 {% block content %}
+<div class="container mt-5">
+    <h2 class="text-danger text-center">{{ class.name }}</h2>
+    <p class="text-muted text-center">{{ class.description }}</p>
+    <p>Teacher: <a href="{% url 'profile_detail' user_id=class.teacher.id %}?class_pk={{ class.pk }}" class="text-primary">{{ class.teacher.username }}</a></p>
+    <p class="text-center">Today's Date: <span class="fw-bold">{{ date }}</span></p>
 
-<h2>{{ class.name }}</h2>
-<p>{{ class.description }}</p>
-<p>Teacher: <a href="{% url 'profile_detail' user_id=class.teacher.id %}">{{ class.teacher.username }}</a></p>
-<p>Today's Date: <span class="current-date">{{ date }}</span></p>
+    {% if user == class.teacher %}
+        <!-- Teacher-only section -->
+        <div class="mb-4 text-center">
+            <a href="{% url 'manage_join_requests' pk=class.pk %}" class="btn btn-secondary me-2">Manage Join Requests</a>
+            <a href="{% url 'add_student' pk=class.pk %}" class="btn btn-primary">Add Student</a>
+        </div>
 
-{% if user == class.teacher %}
-    <!-- Teacher-only section -->
-    <a href="{% url 'manage_join_requests' pk=class.pk %}" class="btn btn-secondary">Manage Join Requests</a>
-    <a href="{% url 'add_student' pk=class.pk %}" class="btn btn-primary">Add Student</a>
+        <h3 class="mt-4">Mark Attendance</h3>
+        {% if formset.non_form_errors %}
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    {% for error in formset.non_form_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <!-- Management Form -->
+            <input type="hidden" name="TOTAL_FORMS" value="{{ management_form.TOTAL_FORMS }}">
+            <input type="hidden" name="INITIAL_FORMS" value="{{ management_form.INITIAL_FORMS }}">
 
-    <h3>Mark Attendance</h3>
-    {% if formset.non_form_errors %}
-        <div class="error-messages">
-            <ul>
-                {% for error in formset.non_form_errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Student</th>
+                            <th>Status</th>
+                            <th>Reason</th>
+                            <th>Remove</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if zipped_data %}
+                            {% for form, student in zipped_data %}
+                                <tr {% if student == user %} class="highlighted-student" {% endif %}>
+                                    <td>
+                                        <a href="{% url 'profile_detail' user_id=student.id %}?class_pk={{ class.pk }}" class="text-decoration-none">
+                                            {{ student.username }}
+                                        </a>
+                                        {{ form.student.as_hidden }}
+                                    </td>
+                                    <td>
+                                        <div class="form-group">
+                                            {{ form.status|add_class:"form-select shadow-sm" }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="form-group">
+                                            <!-- Added custom width for Reason -->
+                                            {{ form.reason|add_class:"form-control shadow-sm custom-reason-width" }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'remove_student' class.pk student.pk %}" class="btn btn-danger btn-sm">Remove</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center">No data available in zipped_data</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>            
+                </table>
+            </div>
+            <button type="submit" class="btn btn-success mt-3" {% if attendance_marked %}disabled{% endif %}>
+                {% if attendance_marked %}Attendance Already Marked{% else %}Submit Attendance{% endif %}
+            </button>
+        </form>
+    {% else %}
+        <!-- Student or non-teacher view -->
+        <h3 class="mt-4">Enrolled Students</h3>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Student Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if students %}
+                        {% for student in students %}
+                            <tr {% if student == user %} class="highlighted-student" {% endif %}>
+                                <td>
+                                    <a href="{% url 'profile_detail' user_id=student.id %}?class_pk={{ class.pk }}" class="text-decoration-none">{{ student.username }}</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td class="text-center">No students are currently enrolled.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
     {% endif %}
-    <form method="post">
-        {% csrf_token %}
-        <!-- Management Form -->
-        <input type="hidden" name="TOTAL_FORMS" value="{{ management_form.TOTAL_FORMS }}">
-        <input type="hidden" name="INITIAL_FORMS" value="{{ management_form.INITIAL_FORMS }}">
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Student</th>
-                    <th>Status</th>
-                    <th>Reason</th>
-                    <th>Remove</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if zipped_data %}
-                    {% for form, student in zipped_data %}
-                        <tr>
-                            <td>
-                                <a href="{% url 'profile_detail' user_id=student.id %}?class_pk={{ class.pk }}">
-                                    {{ student.username }}
-                                </a>
-                                {{ form.student.as_hidden }}
-                            </td>
-                            <td>
-                                {{ form.status }}
-                            </td>
-                            <td>
-                                {{ form.reason|default:"N/A" }}
-                            </td>
-                            <td>
-                                <a href="{% url 'remove_student' class.pk student.pk %}" class="btn btn-danger">
-                                    Remove
-                                </a>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="4">No data available in zipped_data</td>
-                    </tr>
-                {% endif %}
-            </tbody>            
-        </table>
-        <button type="submit" class="btn btn-success" 
-            {% if attendance_marked %}disabled{% endif %}>
-            {% if attendance_marked %}Attendance Already Marked{% else %}Submit Attendance{% endif %}
-        </button>
-    </form>
-{% else %}
-    <!-- Student or non-teacher view -->
-    <h3>Enrolled Students</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Student Name</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if students %}
-                {% for student in students %}
-                    <tr>
-                        <td>
-                            <a href="{% url 'profile_detail' user_id=student.id %}?class_pk={{ class.pk }}">{{ student.username }}</a>
-                        </td>
-                    </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td>No students are currently enrolled.</td>
-                </tr>
-            {% endif %}
-        </tbody>
-    </table>
-{% endif %}
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const dropdowns = document.querySelectorAll('select');
-        if (dropdowns.length === 0) {
-            console.warn("No dropdowns found on this page.");
-        } else {
-            dropdowns.forEach(dropdown => {
-                dropdown.classList.add('browser-default');
-            });
-        }
-    });
-</script>
+</div>
 
 {% endblock %}

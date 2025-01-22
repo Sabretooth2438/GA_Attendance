@@ -5,30 +5,38 @@
 {% endblock %}
 
 {% block content %}
-    <h2>Search Classes</h2>
-    <form method="post" class="search-form">
-        {% csrf_token %}
-        <input type="text" name="query" placeholder="Search classes" value="{{ query }}" class="search-input" />
-        <button type="submit" class="btn">Search</button>
-    </form>
+    <div class="container mt-5">
+        <h2 class="text-center">Search Classes</h2>
 
-    <ul class="class-list">
-        {% if classes %}
-            {% for class in classes %}
-                <li class="class-item">
-                    <a href="{% url 'class_detail' pk=class.pk %}" class="class-link">{{ class.name }}</a>
-                    <form method="post" action="{% url 'send_join_request' pk=class.pk %}" class="join-form">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-join"
-                            {% if class in joined_classes %}disabled{% endif %}
-                            {% if class.id in pending_requests %}disabled{% endif %}>
-                            {% if class in joined_classes %}Already Joined{% elif class.id in pending_requests %}Request Pending{% else %}Join{% endif %}
-                        </button>
-                    </form>
-                </li>
-            {% endfor %}
-        {% else %}
-            <p class="no-classes">No classes available.</p>
-        {% endif %}
-    </ul>
+        <form method="post" class="search-form mb-4">
+            {% csrf_token %}
+            <div class="d-flex justify-content-center">
+                <input type="text" name="query" placeholder="Search classes" value="{{ query }}" class="form-control w-75 shadow-sm" />
+                <button type="submit" class="btn btn-info ms-3">Search</button>
+            </div>
+        </form>
+
+        <ul class="list-group">
+            {% if classes %}
+                {% for class in classes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'class_detail' pk=class.pk %}" class="text-decoration-none">
+                            <strong>{{ class.name }}</strong>
+                        </a>
+
+                        <form method="post" action="{% url 'send_join_request' pk=class.pk %}" class="join-form">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-primary"
+                                {% if class in joined_classes %}disabled{% endif %}
+                                {% if class.id in pending_requests %}disabled{% endif %}>
+                                {% if class in joined_classes %}Already Joined{% elif class.id in pending_requests %}Request Pending{% else %}Join{% endif %}
+                            </button>
+                        </form>
+                    </li>
+                {% endfor %}
+            {% else %}
+                <p class="text-center text-muted">No classes available.</p>
+            {% endif %}
+        </ul>
+    </div>
 {% endblock %}

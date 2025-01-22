@@ -458,6 +458,8 @@ def edit_attendance(request, class_pk, student_pk):
 def profile_detail(request, user_id, class_pk=None):
     user_profile = get_object_or_404(Profile, user_id=user_id)
 
+    class_pk = class_pk or request.GET.get('class_pk')
+
     is_teacher = request.user.profile.role == 'Teacher'
     is_own_profile = request.user.id == user_id
 
@@ -486,9 +488,7 @@ def profile_detail(request, user_id, class_pk=None):
                 else 0
             )
         else:
-            messages.error(request, "A class must be specified to view attendance.")
-            return redirect("home")
-
+            messages.warning(request, "Class information is missing. Showing general profile.")
     elif not is_own_profile:
         attendance_records = []
         total_classes = total_absences = absence_percentage = total_late_count = 0

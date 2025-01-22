@@ -3,41 +3,47 @@
 {% block title %}Manage Join Requests | GA Attendance{% endblock %}
 
 {% block content %}
-<h2>Manage Join Requests for {{ class.name }}</h2>
-<div class="back-to-class">
-    <a href="{% url 'class_detail' pk=class.pk %}" class="btn btn-primary">Back to Current Class</a>
-</div>
-<p>Teacher: <a href="{% url 'profile_detail' user_id=class.teacher.id %}">{{ class.teacher.username }}</a></p>
+<div class="container mt-5">
+    <h2 class="text-center text-primary">Manage Join Requests for {{ class.name }}</h2>
 
-{% if join_requests %}
-    <table class="join-requests-table">
-        <thead>
-            <tr>
-                <th>Student</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for request in join_requests %}
-                <tr>
-                    <td>
-                        <a href="{% url 'profile_detail' user_id=request.student.id %}">
-                            {{ request.student.username }}
-                        </a>
-                    </td>
-                    <td>
-                        <form method="post" class="action-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="request_id" value="{{ request.id }}">
-                            <button type="submit" name="action" value="approve" class="btn btn-success">Approve</button>
-                            <button type="submit" name="action" value="reject" class="btn btn-danger">Reject</button>
-                        </form>
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-{% else %}
-    <p>No pending join requests.</p>
-{% endif %}
+    <div class="text-center mb-4">
+        <a href="{% url 'class_detail' pk=class.pk %}" class="btn btn-primary">Back to Current Class</a>
+    </div>
+
+    <p class="text-center"><strong>Teacher:</strong> <a href="{% url 'profile_detail' user_id=class.teacher.id %}" class="text-primary">{{ class.teacher.username }}</a></p>
+
+    {% if join_requests %}
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Student</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in join_requests %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'profile_detail' user_id=request.student.id %}" class="text-decoration-none">
+                                    {{ request.student.username }}
+                                </a>
+                            </td>
+                            <td>
+                                <form method="post" class="action-form d-inline-block">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="request_id" value="{{ request.id }}">
+                                    <button type="submit" name="action" value="approve" class="btn btn-success btn-sm me-2">Approve</button>
+                                    <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-center text-muted">No pending join requests.</p>
+    {% endif %}
+</div>
 {% endblock %}

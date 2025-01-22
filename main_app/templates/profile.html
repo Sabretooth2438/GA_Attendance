@@ -5,16 +5,24 @@
 {% endblock %}
 
 {% block content %}
-  <h2>Profile</h2>
-  <p>Welcome, {{ user.username }}!</p>
-  <p>Email: {{ user.email }}</p>
-  <p>Bio: {{ user.profile.bio }}</p>
-  {% if user.profile.profile_img %}
-    <img src="{{ user.profile.profile_img.url }}" alt="Profile Image" class="profile-img" />
-  {% else %}
-    <p>No Profile Image</p>
-  {% endif %}
-  <form method="get" action="{% url 'edit_profile' %}" class="edit-profile-form">
-    <button type="submit" class="btn">Edit Profile</button>
-  </form>
+<div class="container mt-5">
+    <h2 class="text-center text-primary">Profile</h2>
+    <p class="text-center"><strong>Welcome, {{ user.username }}!</strong></p>
+    <p class="text-center"><strong>Email:</strong> {{ user.email }}</p>
+    <p class="text-center"><strong>Bio:</strong> {{ user.profile.bio|default:"No bio available." }}</p>
+
+    {% if user.profile.profile_img %}
+        <div class="text-center mt-4">
+            <img src="{{ user.profile.profile_img.url }}" alt="Profile Image" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px;">
+        </div>
+    {% else %}
+        <p class="text-center text-muted">No Profile Image</p>
+    {% endif %}
+
+    <div class="text-center mt-4">
+        <form method="get" action="{% url 'edit_profile' %}">
+            <button type="submit" class="btn btn-primary">Edit Profile</button>
+        </form>
+    </div>
+</div>
 {% endblock %}

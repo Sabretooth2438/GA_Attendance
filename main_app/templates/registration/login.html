@@ -1,14 +1,23 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block title %}
     Login | GA Attendance
 {% endblock %}
 
 {% block content %}
-    <h2>Login</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Login</button>
-    </form>
+    <div class="container mt-5">
+        <h2 class="text-center text-primary mb-4">Login</h2>
+        
+        <form method="post" class="p-4 border rounded shadow-sm bg-light">
+            {% csrf_token %}
+            <div class="mb-3">
+                {{ form.username|add_class:"form-control" }}
+            </div>
+            <div class="mb-3">
+                {{ form.password|add_class:"form-control" }}
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+        </form>
+    </div>
 {% endblock %}

@@ -3,42 +3,46 @@
 {% block title %}Edit Attendance | GA Attendance{% endblock %}
 
 {% block content %}
-<h2>Edit Attendance for {{ student_profile.user.username }} in {{ class_instance.name }}</h2>
+<div class="container mt-5">
+    <h2>Edit Attendance for {{ student_profile.user.username }} in {{ class_instance.name }}</h2>
 
-<form method="post">
-    {% csrf_token %}
-    <label for="date-picker">Select Date:</label>
-    <input type="date" id="date-picker" name="selected_date" min="{{ class_instance.start_date }}" max="{{ class_instance.end_date }}">
-    
-    <div id="attendance-details" style="display: none;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Reason (Optional)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td id="selected-date-display"></td>
-                    <td>
-                        <select name="status">
-                            <option value="P">Present</option>
-                            <option value="A">Absent</option>
-                            <option value="L">Late</option>
-                            <option value="E">Excused</option>
-                        </select>
-                    </td>
-                    <td>
-                        <input type="text" name="reason" placeholder="Optional reason">
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <button type="submit">Save Changes</button>
-    </div>
-</form>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-4">
+            <label for="date-picker" class="form-label">Select Date:</label>
+            <input type="date" id="date-picker" name="selected_date" class="form-control" min="{{ class_instance.start_date }}" max="{{ class_instance.end_date }}">
+        </div>
+
+        <div id="attendance-details" class="mt-3" style="display: none;">
+            <table class="table table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Reason (Optional)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td id="selected-date-display"></td>
+                        <td>
+                            <select name="status" class="form-select">
+                                <option value="P">Present</option>
+                                <option value="A">Absent</option>
+                                <option value="L">Late</option>
+                                <option value="E">Excused</option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" name="reason" class="form-control" placeholder="Optional reason">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-primary mt-3">Save Changes</button>
+        </div>
+    </form>
+</div>
 
 <script>
     const datePicker = document.getElementById('date-picker');
