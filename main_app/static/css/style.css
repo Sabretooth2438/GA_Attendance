@@ -191,6 +191,12 @@ footer {
   text-decoration: underline;
 }
 
+/* Styling for the username */
+.username-color {
+  color: #007bff;
+  font-weight: bold;
+}
+
 /* Rotation Animation */
 @keyframes rotate {
   0% { transform: rotate(0deg); }

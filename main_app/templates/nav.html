@@ -18,15 +18,6 @@
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{% url 'manage_classes' %}">Manage Classes</a>
                         </li>
-                        {% with user.profile.pending_requests|length as pending_count %}
-                            {% if pending_count > 0 %}
-                                <li class="nav-item notification-indicator">
-                                    <a class="nav-link text-warning" href="{% url 'manage_join_requests' pk=some_class.pk %}">
-                                        Join Requests ({{ pending_count }})
-                                    </a>
-                                </li>
-                            {% endif %}
-                        {% endwith %}
                     {% endif %}
 
                     {% if user.profile and user.profile.role == 'Student' %}
